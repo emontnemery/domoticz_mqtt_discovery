@@ -477,7 +477,7 @@ class BasePlugin:
         if updatedevice:
             nValue = device.nValue
             sValue = device.sValue
-            device.Update(nValue=nValue, sValue, TimedOut=TimedOut)
+            device.Update(nValue=nValue, sValue=sValue, TimedOut=TimedOut)
 
     def updateTasmotaStatus(self, device, topic, message):
         #Domoticz.Debug("updateTasmotaStatus topic: '" + topic + "' message: '" + str(message) + "'")
