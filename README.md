@@ -4,11 +4,10 @@ Domoticz Python plugin which implements support for [Home-Assistant style MQTT d
 ### Features:
 - Switch and dimmer devices will be automatically found and added to Domoticz device database
 - State in Domoticz in synchronized with device state (unlike with "Dummy hardware")
-- Note: Buttons are not yet supported
 - Note: Sensors are not yet supported
 
 ### Prerequisites:
-- Domoticz must be from Jan19 2018 or newer (must include PR #2071)
+- Domoticz must be from April 3 2018 or newer (must include PR #2249)
 - Sonoff devices must be flashed with 5.11.1c or newer (must include support for home-assistant style MQTT discovery)
 - Sonoff devices must have option 19 set to 1 (setoption19 1)
 - Sonoff devices must be connected to MQTT server, and must have individual topics (by default all devices topic will be set to `sonoff`, this will not work)
