@@ -209,10 +209,13 @@ class BasePlugin:
             #   <option label="Used" value="1"  default="true" />
             # </options>
             Domoticz.Log("Warning: could not load plugin options '" + Parameters["Mode3"] + "' as JSON object")
-            if int(options) == 0:
-              self.options['addDiscoveredDeviceUsed'] = False
-            if int(options) == 1:
-              self.options['addDiscoveredDeviceUsed'] = True
+            try:
+              if int(options) == 0:
+                self.options['addDiscoveredDeviceUsed'] = False
+              if int(options) == 1:
+                self.options['addDiscoveredDeviceUsed'] = True
+            except ValueError: #Options not a valid int
+              pass
         elif type(options) == dict:
             self.options.add(options)
         Domoticz.Log("Plugin options: " + str(self.options))
@@ -260,13 +263,22 @@ class BasePlugin:
             return
 
         if topic.startswith(self.discoverytopic):
-            # TODO: Make sure the topiclist has correct length
-            # TODO: Offset with length of self.discoverytopiclist
-            devicetype = topiclist[1]
-            devicename = topiclist[2]
-            action = topiclist[3]
-            if action == 'config' and ('command_topic' in message or 'state_topic' in message):
-                self.updateDeviceSettings(devicename, devicetype, message)
+            discoverytopiclen = len(self.discoverytopiclist)
+            # Discovery topic format:
+            # <discovery_prefix>/<component>/[<node_id>/]<object_id>/<action>
+            if len(topiclist) == discoverytopiclen + 3 or len(topiclist) == discoverytopiclen + 4:
+              component = topiclist[discoverytopiclen]
+              if len(topiclist) == discoverytopiclen + 3:
+                node_id = ''
+                object_id = topiclist[discoverytopiclen+1]
+                action = topiclist[discoverytopiclen+2]
+              else:
+                node_id = topiclist[discoverytopiclen+1]
+                object_id = topiclist[discoverytopiclen+2]
+                action = topiclist[discoverytopiclen+3]
+
+              if action == 'config' and ('command_topic' in message or 'state_topic' in message):
+                  self.updateDeviceSettings(object_id, component, message)
         else:
             matchingDevices = self.getDevices(topic=topic)
             for device in matchingDevices:
@@ -631,7 +643,7 @@ class BasePlugin:
         isTeleTopic = False # Tasmota tele topic
         updatedevice = False
         updatecolor = False
-        if hasattr(device, 'Color'): # Temporary check until merge of Domoticz PR #2229
+        if hasattr(device, 'Color'): # TODO: Temporary check until merge of Domoticz PR #2229
             try:
                 Color = json.loads(device.Color);
             except (ValueError, KeyError, TypeError) as e:
