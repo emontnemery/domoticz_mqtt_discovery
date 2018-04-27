@@ -337,11 +337,11 @@ class BasePlugin:
                 elif Command == "On":
                     payload = "ON"
                     if "payload_on" in configdict: payload = configdict["payload_on"]
-                    self.mqttClient.Publish(configdict["command_topic"],configdict["payload_on"])
+                    self.mqttClient.Publish(configdict["command_topic"],payload)
                 elif Command == "Off":
                     payload = "OFF"
                     if "payload_off" in configdict: payload = configdict["payload_off"]
-                    self.mqttClient.Publish(configdict["command_topic"],configdict["payload_off"])
+                    self.mqttClient.Publish(configdict["command_topic"],payload)
                 elif Command == "Set Color":
                     try:
                         Color = json.loads(sColor);
