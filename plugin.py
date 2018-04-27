@@ -335,8 +335,12 @@ class BasePlugin:
                 if Command == "Set Brightness" or Command == "Set Level" or (Command == "On" and Level > 0):
                     self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
                 elif Command == "On":
+                    payload = "ON"
+                    if "payload_on" in configdict: payload = configdict["payload_on"]
                     self.mqttClient.Publish(configdict["command_topic"],configdict["payload_on"])
                 elif Command == "Off":
+                    payload = "OFF"
+                    if "payload_off" in configdict: payload = configdict["payload_off"]
                     self.mqttClient.Publish(configdict["command_topic"],configdict["payload_off"])
                 elif Command == "Set Color":
                     try:
@@ -679,10 +683,12 @@ class BasePlugin:
                 else:
                     Domoticz.Debug("No value_template")
                     payload = message
-                    if  "payload_off" in configdict and payload == configdict["payload_off"]:
+                    if  (("payload_off" in configdict and payload == configdict["payload_off"]) or
+                         "payload_off" not in configdict and payload == 'OFF'):
                         updatedevice = True
                         nValue = 0
-                    if  "payload_on" in configdict and payload == configdict["payload_on"]:
+                    if  (("payload_on" in configdict and payload == configdict["payload_on"]) or
+                         "payload_on" not in configdict and payload == 'ON'):
                         updatedevice = True
                         nValue = 1
                     Domoticz.Debug("nValue: '" + str(nValue) + "'")
