@@ -337,10 +337,12 @@ class BasePlugin:
                 elif Command == "On":
                     payload = "ON"
                     if "payload_on" in configdict: payload = configdict["payload_on"]
+                    elif "payload_close" in configdict: payload = configdict["payload_close"]
                     self.mqttClient.Publish(configdict["command_topic"],payload)
                 elif Command == "Off":
                     payload = "OFF"
                     if "payload_off" in configdict: payload = configdict["payload_off"]
+                    elif "payload_open" in configdict: payload = configdict["payload_open"]
                     self.mqttClient.Publish(configdict["command_topic"],payload)
                 elif Command == "Set Color":
                     try:
@@ -600,6 +602,11 @@ class BasePlugin:
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
             switchTypeDomoticz = 9 # STYPE_PushOn
+        if devicetype == 'cover':
+            TypeName = 'Switch'
+            Type = 0xf4        # pTypeGeneralSwitch
+            Subtype = 0x49     # sSwitchGeneralSwitch
+            switchTypeDomoticz = 3 # STYPE_Blinds
 
         matchingDevices = self.getDevices(key='devicename', value=devicename)
         if len(matchingDevices) == 0:
@@ -684,11 +691,13 @@ class BasePlugin:
                     Domoticz.Debug("No value_template")
                     payload = message
                     if  (("payload_off" in configdict and payload == configdict["payload_off"]) or
-                         "payload_off" not in configdict and payload == 'OFF'):
+                         ("state_open" in configdict and payload == configdict["state_open"]) or
+                         "payload_off" not in configdict and "state_open" not in configdict and payload == 'OFF'):
                         updatedevice = True
                         nValue = 0
                     if  (("payload_on" in configdict and payload == configdict["payload_on"]) or
-                         "payload_on" not in configdict and payload == 'ON'):
+                         ("state_close" in configdict and payload == configdict["state_close"]) or
+                         "payload_on" not in configdict and "state_close" not in configdict and payload == 'ON'):
                         updatedevice = True
                         nValue = 1
                     Domoticz.Debug("nValue: '" + str(nValue) + "'")
