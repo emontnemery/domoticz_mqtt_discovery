@@ -1,7 +1,7 @@
 #           MQTT discovery plugin
 #
 """
-<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.2">
+<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.3">
     <description>
       MQTT discovery, compatible with home-assistant.<br/><br/>
       Specify MQTT server and port.<br/>
@@ -22,10 +22,10 @@
         <param field="Mode3" label="Options" width="300px"/>
         <param field="Mode6" label="Debug" width="75px">
             <options>
-                <option label="Extra verbose" value="Verbose+"/>
-                <option label="Verbose" value="Verbose"/>
-                <option label="True" value="Debug"/>
-                <option label="False" value="Normal"  default="true" />
+                <option label="Extra verbose: (Framework logs 2+4+8+16+64 + MQTT dump)" value="Verbose+"/>
+                <option label="Verbose: (Framework logs 2+4+8+16+64 + MQTT dump)" value="Verbose"/>
+                <option label="Normal: (Framework logs 2+4+8)" value="Debug"/>
+                <option label="None" value="Normal"  default="true" />
             </options>
         </param>
     </params>
@@ -634,8 +634,7 @@ class BasePlugin:
                 oldconfigdict = json.loads(device.Options['config'])
             except (ValueError, KeyError, TypeError) as e:
                 pass
-            if hasattr(device, 'SwitchType'): # TODO: Temporary check until merge of Domoticz PR #2147
-              if Type != 0 and (device.Type != Type or device.SubType != Subtype or device.SwitchType != switchTypeDomoticz or oldconfigdict != config):
+            if Type != 0 and (device.Type != Type or device.SubType != Subtype or device.SwitchType != switchTypeDomoticz or oldconfigdict != config):
                 Domoticz.Log("updateDeviceSettings: " + self.deviceStr(self.getUnit(device)) + ": Device settings not matching, updating Type, SubType, Switchtype and Options['config']")
                 Domoticz.Log("updateDeviceSettings: device.Type: " + str(device.Type) + "->" + str(Type) + ", device.SubType: " + str(device.SubType) + "->" + str(Subtype) +
                              ", device.SwitchType: " + str(device.SwitchType) + "->" + str(switchTypeDomoticz) +
@@ -654,12 +653,11 @@ class BasePlugin:
         isTeleTopic = False # Tasmota tele topic
         updatedevice = False
         updatecolor = False
-        if hasattr(device, 'Color'): # TODO: Temporary check until merge of Domoticz PR #2229
-            try:
-                Color = json.loads(device.Color);
-            except (ValueError, KeyError, TypeError) as e:
-                Color = {}
-                pass
+        try:
+            Color = json.loads(device.Color);
+        except (ValueError, KeyError, TypeError) as e:
+            Color = {}
+            pass
 
         try:
             devicetopics=[]
@@ -785,7 +783,7 @@ class BasePlugin:
             pass
 
         if updatedevice:
-            if hasattr(device, 'Color') and updatecolor: # TODO: Temporary check until merge of Domoticz PR #2229
+            if updatecolor:
                 # Do not update if we got Tasmota periodic state update and state has not changed
                 if not isTeleTopic or nValue != device.nValue or sValue != device.sValue:
                     Domoticz.Log(self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(device.nValue) + "->" + str(nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "', color: '" + device.Color + "'->'" + json.dumps(Color) + "'")
@@ -895,7 +893,7 @@ class BasePlugin:
                     cmnd_topic = re.sub(r"\/STATE\d?", "", cmnd_topic) # Remove '/STATE'
                     Description = "IP: " + IPAddress + ", Topic: " + cmnd_topic
                     updatedevice = True
-            if hasattr(device, 'Description') and updatedevice and (device.Description != Description): # TODO: Temporary check until merge of Domoticz PR #2179
+            if updatedevice and (device.Description != Description):
                 Domoticz.Log("updateTasmotaSettings updating description from: '" + device.Description + "' to: '" + Description + "'")
                 device.Update(nValue=nValue, sValue=sValue, Description=Description, SuppressTriggers=True)
                 self.copyDevices()
