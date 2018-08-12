@@ -1,7 +1,7 @@
 #           MQTT discovery plugin
 #
 """
-<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.3">
+<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.4">
     <description>
       MQTT discovery, compatible with home-assistant.<br/><br/>
       Specify MQTT server and port.<br/>
@@ -568,12 +568,7 @@ class BasePlugin:
         Type = 0
         Subtype = 0
         switchTypeDomoticz = 0 # OnOff
-        if devicetype == 'switch':
-            Domoticz.Debug("devicetype == 'switch'")
-            TypeName = 'Switch'
-            Type = 0xf4        # pTypeGeneralSwitch
-            Subtype = 0x49     # sSwitchGeneralSwitch
-        if devicetype == 'light':
+        if devicetype == 'light' and ('brightness_command_topic' in config or 'color_temp_command_topic' in config or 'rgb_command_topic' in config):
             Domoticz.Debug("devicetype == 'light'")
             switchTypeDomoticz = 7 # Dimmer
             rgbww = 0
@@ -597,12 +592,17 @@ class BasePlugin:
                 TypeName = 'Switch'
                 Type = 0xf4    # pTypeGeneralSwitch
                 Subtype = 0x49 # sSwitchGeneralSwitch
-        if devicetype == 'binary_sensor':
+        elif devicetype == 'switch' or devicetype == 'light': # Switch or light without dimming/color/color temperature
+            Domoticz.Debug("devicetype == 'switch'")
+            TypeName = 'Switch'
+            Type = 0xf4        # pTypeGeneralSwitch
+            Subtype = 0x49     # sSwitchGeneralSwitch
+        elif devicetype == 'binary_sensor':
             TypeName = 'Switch'
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
             switchTypeDomoticz = 9 # STYPE_PushOn
-        if devicetype == 'cover':
+        elif devicetype == 'cover':
             TypeName = 'Switch'
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
