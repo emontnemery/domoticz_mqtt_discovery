@@ -568,7 +568,7 @@ class BasePlugin:
         Type = 0
         Subtype = 0
         switchTypeDomoticz = 0 # OnOff
-        if devicetype == 'light' and ('brightness_command_topic' in config or 'color_temp_command_topic' in config or 'rgb_command_topic' in config):
+        if (devicetype == 'light' or devicetype == 'switch') and ('brightness_command_topic' in config or 'color_temp_command_topic' in config or 'rgb_command_topic' in config):
             Domoticz.Debug("devicetype == 'light'")
             switchTypeDomoticz = 7 # Dimmer
             rgbww = 0
