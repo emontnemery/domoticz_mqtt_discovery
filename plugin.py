@@ -489,6 +489,7 @@ class BasePlugin:
                 #Domoticz.Error("onMQTTSubscribed: Error: " + str(e))
                 Domoticz.Error(traceback.format_exc())
 
+# ==========================================================DASHBOARD COMMAND=============================================================
     def onCommand(self, Unit, Command, Level, sColor):
         Domoticz.Log("onCommand " + self.deviceStr(Unit) + ": Command: '" + str(Command) + "', Level: " + str(Level) + ", Color:" + str(sColor));
 
@@ -496,7 +497,9 @@ class BasePlugin:
             try:
                 # TODO: Make sure the relevant command topic exists
                 configdict = json.loads(Devices[Unit].Options['config'])
-                if Command == "Set Brightness" or Command == "Set Level" or (Command == "On" and Level > 0):
+                if Command == "Set Level" and  "position_topic" in configdict:
+                    self.mqttClient.Publish(configdict["set_position_topic"],str(Level))
+                elif Command == "Set Brightness" or Command == "Set Level":
                     self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
                 elif Command == "On":
                     payload = "ON"
@@ -506,6 +509,11 @@ class BasePlugin:
                 elif Command == "Off":
                     payload = "OFF"
                     if "payload_off" in configdict: payload = configdict["payload_off"]
+                    elif "payload_open" in configdict: payload = configdict["payload_open"]
+                    self.mqttClient.Publish(configdict["command_topic"],payload)
+                elif Command == "Stop":
+                    payload = "STOP"
+                    if "payload_stop" in configdict: payload = configdict["payload_stop"]
                     elif "payload_open" in configdict: payload = configdict["payload_open"]
                     self.mqttClient.Publish(configdict["command_topic"],payload)
                 elif Command == "Set Color":
@@ -574,6 +582,10 @@ class BasePlugin:
                 devicetype = 'light'
             elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
+                ((Device.SwitchType == 3) or (Device.SwitchType == 15) or (Device.SwitchType == 13))):   # Blind
+                devicetype = 'blinds'
+            elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
+                Device.SubType == 0x49 and  # sSwitchGeneralSwitch
                 Device.SwitchType == 9):    # STYPE_PushOn
                 devicetype = 'binary_sensor'
             if devicetype:
@@ -615,7 +627,7 @@ class BasePlugin:
                     #Domoticz.Debug("getTopics: key:'" + str(key) +"' value: '" + str(value) + "'")
                     try:
                         #if key.endswith('_topic'):
-                        if key == 'availability_topic' or key == 'state_topic' or key == 'brightness_state_topic' or key == 'rgb_state_topic' or key == 'color_temp_state_topic':
+                        if key == 'availability_topic' or key == 'state_topic' or key == 'brightness_state_topic' or key == 'rgb_state_topic' or key == 'color_temp_state_topic' or key == 'position_topic':
                             topics.add(value)
                     except (TypeError) as e:
                         Domoticz.Error("getTopics: Error: " + str(e))
@@ -725,6 +737,7 @@ class BasePlugin:
         except (ValueError, KeyError) as e:
             pass
 
+# =============================================================DEVICE CONFIG==============================================================
     def updateDeviceSettings(self, devicename, devicetype, config):
         Domoticz.Debug("updateDeviceSettings devicename: '" + devicename + "' devicetype: '" + devicetype + "' config: '" + str(config) + "'")
 
@@ -755,7 +768,7 @@ class BasePlugin:
             else:
                 TypeName = 'Switch'
                 Type = 0xf4    # pTypeGeneralSwitch
-                Subtype = 0x49 # sSwitchGeneralSwitch
+                Subtype = 0x3E # sSwitchGeneralSwitch
         elif devicetype == 'switch' or devicetype == 'light': # Switch or light without dimming/color/color temperature
             Domoticz.Debug("devicetype == 'switch'")
             TypeName = 'Switch'
@@ -766,11 +779,15 @@ class BasePlugin:
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
             switchTypeDomoticz = 9 # STYPE_PushOn
+        elif (devicetype == 'cover') and ('set_position_topic' in config):
+            Type = 0xf4        # pTypeGeneralSwitch
+            Subtype = 0x49     # sSwitchGeneralSwitch
+            switchTypeDomoticz = 13 # Blinds percent
         elif devicetype == 'cover':
             TypeName = 'Switch'
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
-            switchTypeDomoticz = 3 # STYPE_Blinds
+            switchTypeDomoticz = 15 # STYPE_Blinds Venetian-type  with stop button
 
         matchingDevices = self.getDevices(key='devicename', value=devicename)
         if len(matchingDevices) == 0:
@@ -810,6 +827,7 @@ class BasePlugin:
                 device.Update(nValue=nValue, sValue=sValue, Type=Type, Subtype=Subtype, Switchtype=switchTypeDomoticz, Options=Options, SuppressTriggers=True)
                 self.copyDevices()
 
+# ==========================================================UPDATE STATUS from MQTT==============================================================
     def updateSwitch(self, device, topic, message):
         #Domoticz.Debug("updateSwitch topic: '" + topic + "' switchNo: " + str(switchNo) + " key: '" + key + "' message: '" + str(message) + "'")
         nValue = device.nValue #0
@@ -862,6 +880,11 @@ class BasePlugin:
                          "payload_on" not in configdict and "state_close" not in configdict and payload == 'ON'):
                         updatedevice = True
                         nValue = 1
+                    if  (("payload_stop" in configdict and payload == configdict["payload_stop"]) or
+                         ("state_stop" in configdict and payload == configdict["state_stop"]) or
+                         "payload_stop" not in configdict and "state_stop" not in configdict and payload == 'STOP'):
+                        updatedevice = True
+                        nValue = 17
                     Domoticz.Debug("nValue: '" + str(nValue) + "'")
             if "brightness_state_topic" in devicetopics:
                 Domoticz.Debug("Got brightness_state_topic")
@@ -879,14 +902,21 @@ class BasePlugin:
                     else:
                         Domoticz.Debug("message[brightness_value_template]: '-'")
                 else:
-                    #TODO: test
-                    payload = message
+                    payload = int(message)
                     brightness_scale = 255
                     if "brightness_scale" in configdict:
                         brightness_scale = configdict['brightness_scale']
-                    sValue = payload * 100 / brightness_scale
-
+                    sValue = int(payload * 100 / brightness_scale)
                     Domoticz.Debug("sValue: '" + str(sValue) + "'")
+                    updatedevice = True
+
+            if "position_topic" in devicetopics:
+                payload = message
+                sValue = payload
+                nValue = 0
+                Domoticz.Log("sValue: '" + str(sValue) + "'")
+                updatedevice = True
+
             if "rgb_state_topic" in devicetopics:
                 Domoticz.Debug("Got rgb_state_topic")
                 if "rgb_value_template" in configdict:
