@@ -497,7 +497,7 @@ class BasePlugin:
             try:
                 # TODO: Make sure the relevant command topic exists
                 configdict = json.loads(Devices[Unit].Options['config'])
-                if Command == "Set Level" and  "position_topic" in configdict:
+                if Command == "Set Level" and  "set_position_topic" in configdict:
                     self.mqttClient.Publish(configdict["set_position_topic"],str(Level))
                 elif Command == "Set Brightness" or Command == "Set Level":
                     self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
@@ -514,7 +514,6 @@ class BasePlugin:
                 elif Command == "Stop":
                     payload = "STOP"
                     if "payload_stop" in configdict: payload = configdict["payload_stop"]
-                    elif "payload_open" in configdict: payload = configdict["payload_open"]
                     self.mqttClient.Publish(configdict["command_topic"],payload)
                 elif Command == "Set Color":
                     try:
@@ -582,8 +581,10 @@ class BasePlugin:
                 devicetype = 'light'
             elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
-                ((Device.SwitchType == 3) or (Device.SwitchType == 15) or (Device.SwitchType == 13))):   # Blind
-                devicetype = 'blinds'
+                ((Device.SwitchType == 3) or  # Blind (up/down buttons)
+                 (Device.SwitchType == 15) or # Venetian blinds EU (up/down/stop buttons)
+                 (Device.SwitchType == 13))): # Blinds Percentage
+                devicetype = 'blinds' 
             elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
                 Device.SwitchType == 9):    # STYPE_PushOn
@@ -768,7 +769,7 @@ class BasePlugin:
             else:
                 TypeName = 'Switch'
                 Type = 0xf4    # pTypeGeneralSwitch
-                Subtype = 0x3E # sSwitchGeneralSwitch
+                Subtype = 0x3E # dimmer
         elif devicetype == 'switch' or devicetype == 'light': # Switch or light without dimming/color/color temperature
             Domoticz.Debug("devicetype == 'switch'")
             TypeName = 'Switch'
@@ -884,7 +885,7 @@ class BasePlugin:
                          ("state_stop" in configdict and payload == configdict["state_stop"]) or
                          "payload_stop" not in configdict and "state_stop" not in configdict and payload == 'STOP'):
                         updatedevice = True
-                        nValue = 17
+                        nValue = 17  # state = STOP  in blinds
                     Domoticz.Debug("nValue: '" + str(nValue) + "'")
             if "brightness_state_topic" in devicetopics:
                 Domoticz.Debug("Got brightness_state_topic")
