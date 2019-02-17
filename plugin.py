@@ -769,7 +769,7 @@ class BasePlugin:
             else:
                 TypeName = 'Switch'
                 Type = 0xf4    # pTypeGeneralSwitch
-                Subtype = 0x3E # dimmer
+                Subtype = 0x49 # sSwitchGeneralSwitch
         elif devicetype == 'switch' or devicetype == 'light': # Switch or light without dimming/color/color temperature
             Domoticz.Debug("devicetype == 'switch'")
             TypeName = 'Switch'
@@ -788,7 +788,7 @@ class BasePlugin:
             TypeName = 'Switch'
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
-            switchTypeDomoticz = 15 # STYPE_Blinds Venetian-type  with stop button
+            switchTypeDomoticz = 15 # STYPE_Blinds Venetian-type  with UP / DOWN / STOP   buttons
 
         matchingDevices = self.getDevices(key='devicename', value=devicename)
         if len(matchingDevices) == 0:
