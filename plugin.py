@@ -571,7 +571,7 @@ class BasePlugin:
             devicetype = ''
             if (Device.Type == 0xf4 and     # pTypeGeneralSwitch
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
-                Device.SwitchType == 0):    # OnOff 
+                Device.SwitchType == 0):    # OnOff
                 devicetype = 'switch'
             elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
@@ -750,17 +750,19 @@ class BasePlugin:
             Domoticz.Debug("devicetype == 'light'")
             switchTypeDomoticz = 7 # Dimmer
             rgbww = 0
+            if 'white_value_command_topic' in config:
+                rgbww = 1
             if 'color_temp_command_topic' in config:
                 rgbww = 2
             if 'rgb_command_topic' in config:
                 rgbww = rgbww + 3
             if rgbww == 2:     # WW
                 Type = 0xf1    # pTypeColorSwitch
-                Subtype = 0x03 # sTypeColor_White, maybe not correct.. Used by some HW as simple dimmer, as some as white with adjustable color temperature
+                Subtype = 0x08 # sTypeColor_CW_WW
             elif rgbww == 3:   # RGB
                 Type = 0xf1    # pTypeColorSwitch
                 Subtype = 0x02 # sTypeColor_RGB
-            elif rgbww == 4:   # RGBW TODO: Can't be detected..
+            elif rgbww == 4:   # RGBW
                 Type = 0xf1    # pTypeColorSwitch
                 Subtype = 0x06 # sTypeColor_RGB_W_Z
             elif rgbww == 5:   # RGBWW
