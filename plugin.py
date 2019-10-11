@@ -526,10 +526,12 @@ class BasePlugin:
                     b = int(Color["b"]*Level/100)
                     cw = int(Color["cw"]*Level/100)
                     ww = int(Color["ww"]*Level/100)
-                    self.mqttClient.Publish(configdict["rgb_command_topic"],format(r, '02x') + format(g, '02x') + format(b, '02x') + format(cw, '02x') + format(ww, '02x'))
-                #elif Command == "Set Kelvin Level":
-                #    self.mqttClient.Publish(configdict["color_temp_command_topic"],str(Color["t"]*(500-153)/255+153))
-                #    self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
+                    if "rgb_command_topic" in configdict and "brightness_command_topic" in configdict:
+                        self.mqttClient.Publish(configdict["rgb_command_topic"],format(r, '02x') + format(g, '02x') + format(b, '02x') + format(cw, '02x') + format(ww, '02x'))
+                        self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
+                    if "color_temp_command_topic" in configdict and "brightness_command_topic" in configdict:
+                        self.mqttClient.Publish(configdict["color_temp_command_topic"],str(Color["t"]*(500-153)/255+153))
+                        self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
             except (ValueError, KeyError, TypeError) as e:
                 Domoticz.Error("onCommand: Error: " + str(e))
         else:
