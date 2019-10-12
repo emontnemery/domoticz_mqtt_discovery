@@ -529,7 +529,7 @@ class BasePlugin:
                     if "rgb_command_topic" in configdict and "brightness_command_topic" in configdict:
                         self.mqttClient.Publish(configdict["rgb_command_topic"],format(r, '02x') + format(g, '02x') + format(b, '02x') + format(cw, '02x') + format(ww, '02x'))
                         self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
-                    if "color_temp_command_topic" in configdict and "brightness_command_topic" in configdict:
+                    elif "color_temp_command_topic" in configdict and "brightness_command_topic" in configdict:
                         self.mqttClient.Publish(configdict["color_temp_command_topic"],str(Color["t"]*(500-153)/255+153))
                         self.mqttClient.Publish(configdict["brightness_command_topic"],str(Level))
             except (ValueError, KeyError, TypeError) as e:
@@ -952,7 +952,7 @@ class BasePlugin:
                     #    brightness_scale = configdict['brightness_scale']
                     #sValue = payload * 100 / brightness_scale
                     Domoticz.Debug("sValue: '" + str(sValue) + "'")
-            if "color_temp_state_topic" in devicetopics:
+            elif "color_temp_state_topic" in devicetopics:
                 Domoticz.Debug("Got color_temp_state_topic")
                 if "color_temp_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['color_temp_value_template'])
@@ -962,12 +962,9 @@ class BasePlugin:
                         Domoticz.Debug("message[color_temp_value_template]: '" + str(message[color_temp_value_template]) + "'")
                         payload = message[color_temp_value_template]
                         updatecolor = True
-                        #Color["w"] = True
-                        #Color["t"] = (int(payload)-153)/(500-153)
-                        #brightness_scale = 255
-                        #if "brightness_scale" in configdict:
-                        #    brightness_scale = configdict['brightness_scale']
-                        #sValue = payload * 100 / brightness_scale
+                        Color["m"] = 2 # Color temperature
+                        Color["t"] = int(255*(int(payload)-153)/(500-153))
+                        Domoticz.Debug("Color: "+json.dumps(Color))
                     else:
                         Domoticz.Debug("message[color_temp_value_template]: '-'")
                 else:
