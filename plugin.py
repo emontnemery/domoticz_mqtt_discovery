@@ -586,7 +586,7 @@ class BasePlugin:
                 ((Device.SwitchType == 3) or  # Blind (up/down buttons)
                  (Device.SwitchType == 15) or # Venetian blinds EU (up/down/stop buttons)
                  (Device.SwitchType == 13))): # Blinds Percentage
-                devicetype = 'blinds' 
+                devicetype = 'blinds'
             elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
                 Device.SwitchType == 9):    # STYPE_PushOn
@@ -1029,7 +1029,7 @@ class BasePlugin:
                         updatedevice = True
                         TimedOut = 1
                     Domoticz.Debug("TimedOut: '" + str(TimedOut) + "'")
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, AttributeError) as e:
             pass
 
         if updatedevice:
