@@ -1,0 +1,94 @@
+
+homeassistant/sensor/3C26DD_AM2301_Temperature/config
+{
+    "name": "Ventilators Vannasistaba AM2301 Temperature",
+    "stat_t": "~SENSOR",
+    "avty_t": "~LWT",
+    "frc_upd": true,
+    "pl_avail": "Online",
+    "pl_not_avail": "Offline",
+    "uniq_id": "3C26DD_AM2301_Temperature",
+    "device": {
+        "identifiers": ["3C26DD"],
+        "connections": [
+            ["mac", "5C:CF:7F:3C:26:DD"]
+        ]
+    },
+    "~": "sonoff-th-3C26DD/tele/",
+    "unit_of_meas": "°C",
+    "val_tpl": "{{value_json['AM2301'].Temperature}}",
+    "dev_cla": "temperature"
+}
+
+homeassistant/sensor/3C26DD_AM2301_Humidity/config
+{
+    "name": "Ventilators Vannasistaba AM2301 Humidity",
+    "stat_t": "~SENSOR",
+    "avty_t": "~LWT",
+    "frc_upd": true,
+    "pl_avail": "Online",
+    "pl_not_avail": "Offline",
+    "uniq_id": "3C26DD_AM2301_Humidity",
+    "device": {
+        "identifiers": ["3C26DD"],
+        "connections": [
+            ["mac", "5C:CF:7F:3C:26:DD"]
+        ]
+    },
+    "~": "sonoff-th-3C26DD/tele/",
+    "unit_of_meas": "%",
+    "val_tpl": "{{value_json['AM2301'].Humidity}}",
+    "dev_cla": "humidity"
+}
+
+sonoff-th-3C26DD/tele/SENSOR
+{
+    "Time": "2020-02-21T23:13:05",
+    "AM2301": {
+        "Temperature": 24.1,
+        "Humidity": 48.8
+    },
+    "TempUnit": "C"
+}
+
+sonoff-th-3C26DD/tele/HASS_STATE
+{
+    "Version": "8.1.0(tasmota)",
+    "BuildDateTime": "2019-12-25T12:33:25",
+    "Core": "2_6_1",
+    "SDK": "2.2.2-dev(38a443e)",
+    "Module": "Sonoff TH",
+    "RestartReason": "Hardware Watchdog",
+    "Uptime": "0T10:35:03",
+    "WiFi LinkCount": 1,
+    "WiFi Downtime": "0T00:00:06",
+    "MqttCount": 1,
+    "BootCount": 11,
+    "SaveCount": 157,
+    "IPAddress": "192.168.2.14",
+    "RSSI": "90",
+    "LoadAvg": 19
+}
+
+sonoff-th-3C26DD/tele/STATE
+{
+    "Time": "2020-02-21T23:13:05",
+    "Uptime": "0T10:35:13",
+    "UptimeSec": 38113,
+    "Heap": 28,
+    "SleepMode": "Dynamic",
+    "Sleep": 50,
+    "LoadAvg": 19,
+    "MqttCount": 1,
+    "POWER": "OFF",
+    "Wifi": {
+        "AP": 1,
+        "SSId": "Kirdik",
+        "BSSId": "6C:3B:6B:11:D3:B7",
+        "Channel": 11,
+        "RSSI": 90,
+        "Signal": -55,
+        "LinkCount": 1,
+        "Downtime": "0T00:00:06"
+    }
+}
