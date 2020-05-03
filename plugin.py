@@ -1060,11 +1060,10 @@ class BasePlugin:
                     #    brightness_scale = configdict['brightness_scale']
                     #sValue = payload * 100 / brightness_scale
                     Domoticz.Debug("sValue: '" + str(sValue) + "'")
-        except (ValueError, KeyError) as e:
-            pass
-        except (AttributeError) as e:
+        except (ValueError, KeyError, AttributeError) as e:
             Domoticz.Debug("updateSwitch AttributeError: " +
                            str(traceback.format_exc()) + "")
+            pass
 
         if updatedevice:
             if updatecolor:
@@ -1123,11 +1122,10 @@ class BasePlugin:
                         updatedevice = True
                         TimedOut = 1
                     Domoticz.Debug("TimedOut: '" + str(TimedOut) + "'")
-        except (ValueError, KeyError) as e:
-            pass
-        except (AttributeError) as e:
+        except (ValueError, KeyError, AttributeError) as e:
             Domoticz.Debug(
                 "updateAvailability AttributeError: " + str(traceback.format_exc()) + "")
+            pass
 
         if updatedevice:
             nValue = device.nValue
