@@ -927,20 +927,25 @@ class BasePlugin:
                 if "value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$",
                                  configdict['value_template'])
-                    value_template = m.group(1)
-                    Domoticz.Debug("value_template: '" + value_template + "'")
-                    if value_template in message:
-                        Domoticz.Debug(
-                            "message[value_template]: '" + message[value_template] + "'")
-                        payload = message[value_template]
-                        if "payload_off" in configdict and payload == configdict["payload_off"]:
-                            updatedevice = True
-                            nValue = 0
-                        if "payload_on" in configdict and payload == configdict["payload_on"]:
-                            updatedevice = True
-                            nValue = 1
+                    if m:
+                        value_template = m.group(1)
+                        Domoticz.Debug("value_template: '" +
+                                       value_template + "'")
+                        if value_template in message:
+                            Domoticz.Debug(
+                                "message[value_template]: '" + message[value_template] + "'")
+                            payload = message[value_template]
+                            if "payload_off" in configdict and payload == configdict["payload_off"]:
+                                updatedevice = True
+                                nValue = 0
+                            if "payload_on" in configdict and payload == configdict["payload_on"]:
+                                updatedevice = True
+                                nValue = 1
+                        else:
+                            Domoticz.Debug("message[value_template]: '-'")
                     else:
-                        Domoticz.Debug("message[value_template]: '-'")
+                        Domoticz.Debug(
+                            "configdict[value_template] invalid: " + str(configdict['value_template']))
                 else:
                     Domoticz.Debug("No value_template")
                     payload = message
@@ -1058,7 +1063,8 @@ class BasePlugin:
         except (ValueError, KeyError) as e:
             pass
         except (AttributeError) as e:
-            Domoticz.Debug("updateSwitch AttributeError: '" + str(traceback.format_exc()) + "'")
+            Domoticz.Debug("updateSwitch AttributeError: " +
+                           str(traceback.format_exc()) + "")
 
         if updatedevice:
             if updatecolor:
@@ -1121,7 +1127,7 @@ class BasePlugin:
             pass
         except (AttributeError) as e:
             Domoticz.Debug(
-                "updateAvailability AttributeError: '" + str(traceback.format_exc()) + "'")
+                "updateAvailability AttributeError: " + str(traceback.format_exc()) + "")
 
         if updatedevice:
             nValue = device.nValue
