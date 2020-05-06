@@ -729,7 +729,7 @@ class BasePlugin:
         # TODO: Something smarter to detect Tasmota device
         try:
             #if "/cmnd/" in config["command_topic"] and "/POWER" in config["command_topic"] and "/tele/" in config["availability_topic"] and "/LWT" in config["availability_topic"]:
-            if (("/stat/" in config["state_topic"] and "/RESULT" in config["state_topic"]) or ("/cmnd/" in config["state_topic"] and "/POWER" in config["state_topic"])) and "/tele/" in config["availability_topic"] and "/LWT" in config["availability_topic"]:
+            if (("/stat/" in config["state_topic"] and "/RESULT" in config["state_topic"]) or ("/cmnd/" in config["state_topic"] and "/POWER" in config["state_topic"]) or ("/tele/" in config["state_topic"] and "/STATE" in config["state_topic"])) and "/tele/" in config["availability_topic"] and "/LWT" in config["availability_topic"]:
                 isTasmota = True
 
             Domoticz.Debug("isTasmota: " + str(isTasmota))
