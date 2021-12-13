@@ -4,7 +4,7 @@ Domoticz Python plugin which implements support for [Home-Assistant style MQTT d
 ### Features:
 - Switch and dimmer devices will be automatically found and added to Domoticz device database
 - State in Domoticz in synchronized with device state (unlike if using Domoitcz MQTT + "Dummy hardware")
-- Note: Sensors are not yet supported
+- Note: Only temperature and humidity sensors are supported. Sensor support is experimental
 - The plugin has some special adaptations for the Tasmota ESP8266 firmware.
 
 ### Prerequisites (general):

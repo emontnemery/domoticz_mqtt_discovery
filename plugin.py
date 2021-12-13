@@ -1,7 +1,7 @@
 #           MQTT discovery plugin
 #
 """
-<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.4">
+<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.5">
     <description>
       MQTT discovery, compatible with home-assistant.<br/><br/>
       Specify MQTT server and port.<br/>
@@ -32,6 +32,7 @@
 </plugin>
 """
 import Domoticz
+#from Domoticz import Devices # Used for local debugging without Domoticz
 from datetime import datetime
 from itertools import count, filterfalse
 import json
@@ -417,6 +418,11 @@ class BasePlugin:
                 object_id = topiclist[discoverytopiclen+2]
                 action = topiclist[discoverytopiclen+3]
 
+              # Sensor support
+              if ( component == "sensor" ) and ( node_id != "" ):
+                  object_id = node_id
+              # End Sensor support
+
               if validJSON and action == 'config' and ('command_topic' in message or 'state_topic' in message or 'cmd_t' in message or 'stat_t' in message):
                 # Do expansion of the message
                 payload = dict(message)
@@ -446,8 +452,10 @@ class BasePlugin:
         else:
             matchingDevices = self.getDevices(topic=topic)
             for device in matchingDevices:
-                # Try to update switch state
-                self.updateSwitch(device, topic, message)
+                # Sensor support. Do not throw exception on unknown topics. See also open pull request #29 https://github.com/emontnemery/domoticz_mqtt_discovery/pulls
+                if not self.updateSensor(device, topic, message):
+                    self.updateSwitch(device, topic, message)
+                # end Sensor support
 
                 # Try to update availability
                 self.updateAvailability(device, topic, message)
@@ -591,6 +599,10 @@ class BasePlugin:
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
                 Device.SwitchType == 9):    # STYPE_PushOn
                 devicetype = 'binary_sensor'
+            # Sensor support
+            elif self.isMQTTSensor(Device):
+                devicetype = 'sensor'
+            # End Sensor support
             if devicetype:
                 topic = self.discoverytopic + '/' + devicetype + '/' + Devices[Unit].Options['devicename'] + '/config'
                 Domoticz.Log("Clearing topic '" + topic + "'")
@@ -793,6 +805,16 @@ class BasePlugin:
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
             switchTypeDomoticz = 15 # STYPE_Blinds Venetian-type  with UP / DOWN / STOP   buttons
+        # Sensor support
+        elif devicetype == 'sensor':
+            if 'device_class' in config:
+                if config[ 'device_class' ] == 'temperature':
+                    Type = 0x50         # pTypeTemp RFXTrx.h
+                    Subtype = 0x01      # LaCrosse TX3
+                elif config[ 'device_class' ] == 'humidity':
+                    Type = 0x52         # pTypeTempHum
+                    Subtype = 0x01      # La Crosse
+        # End Sensor support
 
         matchingDevices = self.getDevices(key='devicename', value=devicename)
         if len(matchingDevices) == 0:
@@ -820,6 +842,14 @@ class BasePlugin:
                 oldconfigdict = json.loads(device.Options['config'])
             except (ValueError, KeyError, TypeError) as e:
                 pass
+            # Sensor support
+            # Correction for subsequent messages
+            if self.isMQTTSensor(device):
+                config['value_template'] = oldconfigdict['value_template']
+                if device.Type == 0x52 and Type == 0x50:
+                    Type = 0  # Reset, no change
+                    Subtype = 0
+            # End Sensor support
             if Type != 0 and (device.Type != Type or device.SubType != Subtype or device.SwitchType != switchTypeDomoticz or oldconfigdict != config):
                 Domoticz.Log("updateDeviceSettings: " + self.deviceStr(self.getUnit(device)) + ": Device settings not matching, updating Type, SubType, Switchtype and Options['config']")
                 Domoticz.Log("updateDeviceSettings: device.Type: " + str(device.Type) + "->" + str(Type) + ", device.SubType: " + str(device.SubType) + "->" + str(Subtype) +
@@ -833,6 +863,123 @@ class BasePlugin:
                 self.copyDevices()
 
 # ==========================================================UPDATE STATUS from MQTT==============================================================
+# Sensor support
+    def isMQTTSensor(self, Device):
+        return (((Device.Type == 0x50) or (Device.Type == 0x52)) and    # pTypeTemp or pTypeTemHum
+                ((Device.SubType == 0x05) or (Device.SubType == 0x01))  # La Cross Temp_Hum combined
+               )
+
+    def updateSensor(self, device, topic, message):
+        Domoticz.Debug("updateSensor topic: '" + topic + "' message: '" + str(message) + "'")
+
+        nValue = device.nValue #0
+        sValue = device.sValue #-1
+        isTeleTopic = False # Tasmota tele topic
+        updatedevice = False
+        bat = 255
+        rss = 12
+        result = False
+
+        try:
+            devicetopics=[]
+            configdict = json.loads(device.Options['config'])
+            for key, value in configdict.items():
+                if value == topic:
+                    devicetopics.append(key)
+            if ("state_topic" in devicetopics
+                or "tasmota_tele_topic" in devicetopics): # Switch status is present in Tasmota tele/STAT message
+                if ("state_topic" in devicetopics): Domoticz.Debug("UpdateSensor: Got state_topic " + configdict["state_topic"])
+                if ("tasmota_tele_topic" in devicetopics): Domoticz.Debug("UpdateSensor: Got tasmota_tele_topic " + configdict["tasmota_tele_topic"])
+                if ("tasmota_tele_topic" in devicetopics): isTeleTopic = True # Suppress device triggers for periodic tele/STAT message
+
+                if self.isMQTTSensor(device):
+                    result = True
+
+                    Domoticz.Debug("UpdateSensor: value_template '" +  configdict['value_template'] + "'")
+                    value_template = "Temperature"
+
+                    msg = message
+                    Domoticz.Debug("UpdateSensor: MSG: " + str(msg))
+
+                    m = re.match(r"^{{[\s]*value_json\.*(.+)[\s]*}}$", configdict['value_template'])
+
+                    if m != None:
+                        value_template = m.group( 1 ).strip().strip("'").strip('"')
+                        m = re.split(r"\[(.*?)\]", value_template )
+
+                        Domoticz.Debug("UpdateSensor: value_template '" + value_template + "'")
+
+                        if m != None:
+                            Domoticz.Debug( "UpdateSensor: M1:" + str( m ))
+                            if len( m ) > 1:
+                                value_template = m[ len( m ) - 2 ].strip().strip("'").strip('"')
+                                Domoticz.Debug("UpdateSensor: value_template '" + value_template + "'")
+                                m = m[ 1:len(m) - 2 ]
+                                Domoticz.Debug("UpdateSensor: M2:" + str( m ) )
+                                for value in m:
+                                    val = value.strip().strip("'").strip('"')
+                                    Domoticz.Debug("UpdateSensor: VAL: " + str(val))
+                                    if len(val) > 0:
+                                        msg = msg[ val ]
+                                        Domoticz.Debug("UpdateSensor: MSG: " + str(msg))
+
+                    Domoticz.Debug("UpdateSensor: Matched template '" + value_template + "', Message: " + str(msg) )
+
+                    temp = None
+                    try:
+                        temp = float(msg[value_template])
+                    except (ValueError, KeyError, TypeError):
+                        pass
+
+                    hum = None
+                    try:
+                        hum = float(msg["Humidity"])
+                    except (ValueError, KeyError, TypeError):
+                        pass
+
+                    try:
+                        bat = int(round(float(msg["Battery"])))
+                        if (bat < 0) or (bat > 100):
+                            bat = 255
+                    except (ValueError, KeyError, TypeError):
+                        pass
+
+                    try:
+                        rss = int(round(float(msg["RSSI"])))
+                        rss = int(round((140 + rss) / 10))
+                    except (ValueError, KeyError, TypeError):
+                        pass
+
+                    Domoticz.Debug("UpdateSensor: Temperature: " + str(temp) + ", Humidity: " + str(hum) + ", Battery level: " + str(bat) + ", RSSI: " + str(rss))
+
+                    if temp != None:
+                        updatedevice = True
+
+                        sValue = str(temp) # Always transmit temperature
+
+                        if hum != None:
+                            wet = 1
+                            if hum >= 70:
+                                wet = 3
+                            elif hum <= 40:
+                                wet = 2
+
+                            sValue = sValue + ";" + str(hum) + ";" + str(wet)
+
+
+        except (ValueError, KeyError) as e:
+            pass
+
+        if updatedevice:
+                # Do not update if we got Tasmota periodic state update and state has not changed
+                if not isTeleTopic or nValue != device.nValue or sValue != device.sValue:
+                    Domoticz.Log( "UpdateSensor: "+ self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(device.nValue) + "->" + str(nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "'")
+                    device.Update(nValue=nValue,sValue=sValue, BatteryLevel=bat, SignalLevel=rss)
+                    self.copyDevices()
+
+        return result
+# End Sensor support
+
     def updateSwitch(self, device, topic, message):
         #Domoticz.Debug("updateSwitch topic: '" + topic + "' switchNo: " + str(switchNo) + " key: '" + key + "' message: '" + str(message) + "'")
         nValue = device.nValue #0
