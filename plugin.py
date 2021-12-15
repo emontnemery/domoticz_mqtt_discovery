@@ -32,7 +32,7 @@
 </plugin>
 """
 import Domoticz
-from Domoticz import Devices # Used for local debugging without Domoticz
+#from Domoticz import Devices # Used for local debugging without Domoticz
 from datetime import datetime
 from itertools import count, filterfalse
 import json
