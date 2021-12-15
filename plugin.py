@@ -32,7 +32,7 @@
 </plugin>
 """
 import Domoticz
-#from Domoticz import Devices # Used for local debugging without Domoticz
+from Domoticz import Devices # Used for local debugging without Domoticz
 from datetime import datetime
 from itertools import count, filterfalse
 import json
@@ -452,16 +452,13 @@ class BasePlugin:
         else:
             matchingDevices = self.getDevices(topic=topic)
             for device in matchingDevices:
-                # Sensor support. Do not throw exception on unknown topics. See also open pull request #29 https://github.com/emontnemery/domoticz_mqtt_discovery/pulls
-                if not self.updateSensor(device, topic, message):
-                    self.updateSwitch(device, topic, message)
-                # end Sensor support
+                self.updateSwitch(device, topic, message)
 
                 # Try to update availability
                 self.updateAvailability(device, topic, message)
 
-                # TODO: Try to update sensor
-                #self.updateSensor(device, topic, message)
+                # Try to update sensor
+                self.updateSensor(device, topic, message)
 
                 # TODO: Try to update binary sensor
                 #self.updateBinarySensor(device, topic, message)
@@ -744,24 +741,24 @@ class BasePlugin:
             if (("/stat/" in config["state_topic"] and "/RESULT" in config["state_topic"]) or ("/cmnd/" in config["state_topic"] and "/POWER" in config["state_topic"]) or ("/tele/" in config["state_topic"] and "/STATE" in config["state_topic"])) and "/tele/" in config["availability_topic"] and "/LWT" in config["availability_topic"]:
                 isTasmota = True
 
-            Domoticz.Debug("isTasmota: " + str(isTasmota))
+            Domoticz.Debug("addTasmotaTopics: isTasmota: " + str(isTasmota))
             if isTasmota:
                 statetopic = config["availability_topic"].replace("/LWT", "/STATE")
-                Domoticz.Debug("statetopic: " + statetopic)
+                Domoticz.Debug("addTasmotaTopics: statetopic: " + statetopic)
                 config['tasmota_tele_topic'] = statetopic
         except (ValueError, KeyError) as e:
             pass
 
 # =============================================================DEVICE CONFIG==============================================================
     def updateDeviceSettings(self, devicename, devicetype, config):
-        Domoticz.Debug("updateDeviceSettings devicename: '" + devicename + "' devicetype: '" + devicetype + "' config: '" + str(config) + "'")
+        Domoticz.Debug("updateDeviceSettings: devicename: '" + devicename + "' devicetype: '" + devicetype + "' config: '" + str(config) + "'")
 
         TypeName = ''
         Type = 0
         Subtype = 0
         switchTypeDomoticz = 0 # OnOff
         if (devicetype == 'light' or devicetype == 'switch') and ('brightness_command_topic' in config or 'color_temp_command_topic' in config or 'rgb_command_topic' in config):
-            Domoticz.Debug("devicetype == 'light'")
+            Domoticz.Debug("updateDeviceSettings: devicetype == 'light'")
             switchTypeDomoticz = 7 # Dimmer
             rgbww = 0
             if 'white_value_command_topic' in config:
@@ -787,7 +784,7 @@ class BasePlugin:
                 Type = 0xf4    # pTypeGeneralSwitch
                 Subtype = 0x49 # sSwitchGeneralSwitch
         elif devicetype == 'switch' or devicetype == 'light': # Switch or light without dimming/color/color temperature
-            Domoticz.Debug("devicetype == 'switch'")
+            Domoticz.Debug("updateDeviceSettings: devicetype == 'switch'")
             TypeName = 'Switch'
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
@@ -807,6 +804,7 @@ class BasePlugin:
             switchTypeDomoticz = 15 # STYPE_Blinds Venetian-type  with UP / DOWN / STOP   buttons
         # Sensor support
         elif devicetype == 'sensor':
+            Domoticz.Debug("updateDeviceSettings: devicetype == 'sensor'")
             if 'device_class' in config:
                 if config[ 'device_class' ] == 'temperature':
                     Type = 0x50         # pTypeTemp RFXTrx.h
@@ -895,11 +893,11 @@ class BasePlugin:
                 if self.isMQTTSensor(device):
                     result = True
 
-                    Domoticz.Debug("UpdateSensor: value_template '" +  configdict['value_template'] + "'")
+                    Domoticz.Debug("updateSensor: value_template '" +  configdict['value_template'] + "'")
                     value_template = "Temperature"
 
                     msg = message
-                    Domoticz.Debug("UpdateSensor: MSG: " + str(msg))
+                    #Domoticz.Debug("updateSensor: MSG: " + str(msg))
 
                     m = re.match(r"^{{[\s]*value_json\.*(.+)[\s]*}}$", configdict['value_template'])
 
@@ -907,23 +905,23 @@ class BasePlugin:
                         value_template = m.group( 1 ).strip().strip("'").strip('"')
                         m = re.split(r"\[(.*?)\]", value_template )
 
-                        Domoticz.Debug("UpdateSensor: value_template '" + value_template + "'")
+                        #Domoticz.Debug("updateSensor: value_template '" + value_template + "'")
 
                         if m != None:
-                            Domoticz.Debug( "UpdateSensor: M1:" + str( m ))
+                            #Domoticz.Debug( "updateSensor: M1:" + str( m ))
                             if len( m ) > 1:
                                 value_template = m[ len( m ) - 2 ].strip().strip("'").strip('"')
-                                Domoticz.Debug("UpdateSensor: value_template '" + value_template + "'")
+                                #Domoticz.Debug("updateSensor: value_template '" + value_template + "'")
                                 m = m[ 1:len(m) - 2 ]
-                                Domoticz.Debug("UpdateSensor: M2:" + str( m ) )
+                                #Domoticz.Debug("updateSensor: M2:" + str( m ) )
                                 for value in m:
                                     val = value.strip().strip("'").strip('"')
-                                    Domoticz.Debug("UpdateSensor: VAL: " + str(val))
+                                    #Domoticz.Debug("updateSensor: VAL: " + str(val))
                                     if len(val) > 0:
                                         msg = msg[ val ]
-                                        Domoticz.Debug("UpdateSensor: MSG: " + str(msg))
+                                        #Domoticz.Debug("updateSensor: MSG: " + str(msg))
 
-                    Domoticz.Debug("UpdateSensor: Matched template '" + value_template + "', Message: " + str(msg) )
+                    Domoticz.Debug("updateSensor: Matched template '" + value_template + "', Message: " + str(msg) )
 
                     temp = None
                     try:
@@ -932,10 +930,11 @@ class BasePlugin:
                         pass
 
                     hum = None
-                    try:
-                        hum = float(msg["Humidity"])
-                    except (ValueError, KeyError, TypeError):
-                        pass
+                    if value_template != "Humidity":
+                        try:
+                            hum = float(msg["Humidity"])
+                        except (ValueError, KeyError, TypeError):
+                            pass
 
                     try:
                         bat = int(round(float(msg["Battery"])))
@@ -950,7 +949,7 @@ class BasePlugin:
                     except (ValueError, KeyError, TypeError):
                         pass
 
-                    Domoticz.Debug("UpdateSensor: Temperature: " + str(temp) + ", Humidity: " + str(hum) + ", Battery level: " + str(bat) + ", RSSI: " + str(rss))
+                    Domoticz.Debug("updateSensor: Temperature: " + str(temp) + ", Humidity: " + str(hum) + ", Battery level: " + str(bat) + ", RSSI: " + str(rss))
 
                     if temp != None:
                         updatedevice = True
@@ -973,7 +972,7 @@ class BasePlugin:
         if updatedevice:
                 # Do not update if we got Tasmota periodic state update and state has not changed
                 if not isTeleTopic or nValue != device.nValue or sValue != device.sValue:
-                    Domoticz.Log( "UpdateSensor: "+ self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(device.nValue) + "->" + str(nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "'")
+                    Domoticz.Log( "updateSensor: "+ self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(device.nValue) + "->" + str(nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "'")
                     device.Update(nValue=nValue,sValue=sValue, BatteryLevel=bat, SignalLevel=rss)
                     self.copyDevices()
 
@@ -1008,9 +1007,9 @@ class BasePlugin:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['value_template'])
                     if m:
                         value_template = m.group(1)
-                        Domoticz.Debug("value_template: '" + value_template + "'")
+                        Domoticz.Debug("updateSwitch: value_template: '" + value_template + "'")
                         if value_template in message:
-                            Domoticz.Debug("message[value_template]: '" + message[value_template] + "'")
+                            Domoticz.Debug("updateSwitch: message[value_template]: '" + message[value_template] + "'")
                             payload = message[value_template]
                             if "payload_off" in configdict and payload == configdict["payload_off"]:
                                 updatedevice = True
@@ -1019,11 +1018,11 @@ class BasePlugin:
                                 updatedevice = True
                                 nValue = 1
                         else:
-                            Domoticz.Debug("message[value_template]: '-'")
+                            Domoticz.Debug("updateSwitch: message[value_template]: '-'")
                     else:
-                        Domoticz.Debug("unsupported value_template: '" + configdict['value_template'] + "'")
+                        Domoticz.Debug("updateSwitch: unsupported value_template: '" + configdict['value_template'] + "'")
                 else:
-                    Domoticz.Debug("No value_template")
+                    Domoticz.Debug("updateSwitch: No value_template")
                     payload = message
                     if  (("payload_off" in configdict and payload == configdict["payload_off"]) or
                          ("state_open" in configdict and payload == configdict["state_open"]) or
@@ -1040,50 +1039,50 @@ class BasePlugin:
                          "payload_stop" not in configdict and "state_stop" not in configdict and payload == 'STOP'):
                         updatedevice = True
                         nValue = 17  # state = STOP  in blinds
-                    Domoticz.Debug("nValue: '" + str(nValue) + "'")
+                    Domoticz.Debug("updateSwitch: nValue: '" + str(nValue) + "'")
             if "brightness_state_topic" in devicetopics:
-                Domoticz.Debug("Got brightness_state_topic")
+                Domoticz.Debug("updateSwitch: Got brightness_state_topic")
                 if "brightness_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['brightness_value_template'])
                     if m:
                         brightness_value_template = m.group(1)
-                        Domoticz.Debug("brightness_value_template: '" + brightness_value_template + "'")
+                        Domoticz.Debug("updateSwitch: brightness_value_template: '" + brightness_value_template + "'")
                         if brightness_value_template in message:
-                            Domoticz.Debug("message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
+                            Domoticz.Debug("updateSwitch: message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
                             payload = message[brightness_value_template]
                             brightness_scale = 255
                             if "brightness_scale" in configdict:
                                 brightness_scale = configdict['brightness_scale']
                             sValue = payload * 100 / brightness_scale
                         else:
-                            Domoticz.Debug("message[brightness_value_template]: '-'")
+                            Domoticz.Debug("updateSwitch: message[brightness_value_template]: '-'")
                     else:
-                        Domoticz.Debug("unsupported template: '" + configdict['brightness_value_template'] + "'")
+                        Domoticz.Debug("updateSwitch: unsupported template: '" + configdict['brightness_value_template'] + "'")
                 else:
                     payload = int(message)
                     brightness_scale = 255
                     if "brightness_scale" in configdict:
                         brightness_scale = configdict['brightness_scale']
                     sValue = int(payload * 100 / brightness_scale)
-                    Domoticz.Debug("sValue: '" + str(sValue) + "'")
+                    Domoticz.Debug("updateSwitch: sValue: '" + str(sValue) + "'")
                     updatedevice = True
 
             if "position_topic" in devicetopics:
                 payload = message
                 sValue = payload
                 nValue = 0
-                Domoticz.Log("sValue: '" + str(sValue) + "'")
+                Domoticz.Log("updateSwitch: sValue: '" + str(sValue) + "'")
                 updatedevice = True
 
             if "rgb_state_topic" in devicetopics:
-                Domoticz.Debug("Got rgb_state_topic")
+                Domoticz.Debug("updateSwitch: Got rgb_state_topic")
                 if "rgb_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['rgb_value_template'])
                     if m:
                         rgb_value_template = m.group(1)
-                        Domoticz.Debug("rgb_value_template: '" + rgb_value_template + "'")
+                        Domoticz.Debug("updateSwitch: rgb_value_template: '" + rgb_value_template + "'")
                         if rgb_value_template in message:
-                            Domoticz.Debug("message[rgb_value_template]: '" + str(message[rgb_value_template]) + "'")
+                            Domoticz.Debug("updateSwitch: message[rgb_value_template]: '" + str(message[rgb_value_template]) + "'")
                             payload = message[rgb_value_template]
                             if len(payload)==6 or len(payload)==8 or len(payload)==10:
                                 updatecolor = True
@@ -1095,11 +1094,11 @@ class BasePlugin:
                                 Color["b"] = int(payload[4:6], 16)
                                 Color["cw"] = 0
                                 Color["ww"] = 0
-                                Domoticz.Debug("Color: "+json.dumps(Color))
+                                Domoticz.Debug("updateSwitch: Color: "+json.dumps(Color))
                         else:
-                            Domoticz.Debug("message[rgb_value_template]: '-'")
+                            Domoticz.Debug("updateSwitch: message[rgb_value_template]: '-'")
                     else:
-                        Domoticz.Debug("unsupported template: '" + configdict['rgb_value_template'] + "'")
+                        Domoticz.Debug("updateSwitch: unsupported template: '" + configdict['rgb_value_template'] + "'")
                 else:
                     #TODO: test
                     #payload = message
@@ -1107,25 +1106,25 @@ class BasePlugin:
                     #if "brightness_scale" in configdict:
                     #    brightness_scale = configdict['brightness_scale']
                     #sValue = payload * 100 / brightness_scale
-                    Domoticz.Debug("sValue: '" + str(sValue) + "'")
+                    Domoticz.Debug("updateSwitch: sValue: '" + str(sValue) + "'")
             elif "color_temp_state_topic" in devicetopics:
-                Domoticz.Debug("Got color_temp_state_topic")
+                Domoticz.Debug("updateSwitch: Got color_temp_state_topic")
                 if "color_temp_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['color_temp_value_template'])
                     if m:
                         color_temp_value_template = m.group(1)
-                        Domoticz.Debug("color_temp_value_template: '" + color_temp_value_template + "'")
+                        Domoticz.Debug("updateSwitch: color_temp_value_template: '" + color_temp_value_template + "'")
                         if color_temp_value_template in message:
-                            Domoticz.Debug("message[color_temp_value_template]: '" + str(message[color_temp_value_template]) + "'")
+                            Domoticz.Debug("updateSwitch: message[color_temp_value_template]: '" + str(message[color_temp_value_template]) + "'")
                             payload = message[color_temp_value_template]
                             updatecolor = True
                             Color["m"] = 2 # Color temperature
                             Color["t"] = int(255*(int(payload)-153)/(500-153))
-                            Domoticz.Debug("Color: "+json.dumps(Color))
+                            Domoticz.Debug("updateSwitch: Color: "+json.dumps(Color))
                         else:
-                            Domoticz.Debug("message[color_temp_value_template]: '-'")
+                            Domoticz.Debug("updateSwitch: message[color_temp_value_template]: '-'")
                     else:
-                        Domoticz.Debug("unsupported template: '" + configdict['color_temp_value_template'] + "'")
+                        Domoticz.Debug("updateSwitch: unsupported template: '" + configdict['color_temp_value_template'] + "'")
                 else:
                     #TODO: test
                     #payload = message
@@ -1133,7 +1132,7 @@ class BasePlugin:
                     #if "brightness_scale" in configdict:
                     #    brightness_scale = configdict['brightness_scale']
                     #sValue = payload * 100 / brightness_scale
-                    Domoticz.Debug("sValue: '" + str(sValue) + "'")
+                    Domoticz.Debug("updateSwitch: sValue: '" + str(sValue) + "'")
         except (ValueError, KeyError) as e:
             pass
 
@@ -1162,13 +1161,13 @@ class BasePlugin:
                 if value == topic:
                     devicetopics.append(key)
             if "availability_topic" in devicetopics:
-                Domoticz.Debug("Got availability_topic")
+                Domoticz.Debug("updateAvailability: Got availability_topic")
                 if "availability_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['availability_template'])
                     availability_template = m.group(1)
-                    Domoticz.Debug("availability_template: '" + availability_template + "'")
+                    Domoticz.Debug("updateAvailability: availability_template: '" + availability_template + "'")
                     if availability_template in message:
-                        Domoticz.Debug("message[availability_template]: '" + message[availability_template] + "'")
+                        Domoticz.Debug("updateAvailability: message[availability_template]: '" + message[availability_template] + "'")
                         payload = message[availability_template]
                         if payload == configdict["payload_available"]:
                             updatedevice = True
@@ -1176,9 +1175,9 @@ class BasePlugin:
                         if payload == configdict["payload_not_available"]:
                             updatedevice = True
                             TimedOut = 1
-                        Domoticz.Debug("TimedOut: '" + str(TimedOut) + "'")
+                        Domoticz.Debug("updateAvailability: TimedOut: '" + str(TimedOut) + "'")
                     else:
-                        Domoticz.Debug("message[availability_template]: '-'")
+                        Domoticz.Debug("updateAvailability: message[availability_template]: '-'")
                 else:
                     payload = message
                     if payload == configdict["payload_available"]:
@@ -1187,7 +1186,7 @@ class BasePlugin:
                     if payload == configdict["payload_not_available"]:
                         updatedevice = True
                         TimedOut = 1
-                    Domoticz.Debug("TimedOut: '" + str(TimedOut) + "'")
+                    Domoticz.Debug("updateAvailability: TimedOut: '" + str(TimedOut) + "'")
         except (ValueError, KeyError) as e:
             pass
 
@@ -1213,14 +1212,14 @@ class BasePlugin:
                 if value == topic:
                     devicetopics.append(key)
             if "tasmota_tele_topic" in devicetopics:
-                Domoticz.Debug("Got tasmota_tele_topic")
+                Domoticz.Debug("updateAvailability: Got tasmota_tele_topic")
                 if "Vcc" in message and self.options['updateVCC']:
                     Vcc = int(message["Vcc"]*10)
-                    Domoticz.Debug("Set battery level to: " + str(Vcc) + " was:" + str(device.BatteryLevel))
+                    Domoticz.Debug("updateAvailability: Set battery level to: " + str(Vcc) + " was:" + str(device.BatteryLevel))
                     updatedevice = True
                 if "Wifi" in message and "RSSI" in message["Wifi"] and self.options['updateRSSI']:
                     RSSI = int(message["Wifi"]["RSSI"])
-                    Domoticz.Debug("Set SignalLevel to: " + str(RSSI) + " was:" + str(device.SignalLevel))
+                    Domoticz.Debug("updateAvailability: Set SignalLevel to: " + str(RSSI) + " was:" + str(device.SignalLevel))
                     updatedevice = True
             if updatedevice and (device.SignalLevel != RSSI or device.BatteryLevel != Vcc):
                 Domoticz.Log(self.deviceStr(self.getUnit(device)) + ": Setting SignalLevel: '" + str(RSSI) + "', BatteryLevel: '" + str(Vcc) + "'")
