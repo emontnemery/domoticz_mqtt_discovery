@@ -859,19 +859,22 @@ class BasePlugin:
                 if ("tasmota_tele_topic" in devicetopics): isTeleTopic = True # Suppress device triggers for periodic tele/STAT message
                 if "value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['value_template'])
-                    value_template = m.group(1)
-                    Domoticz.Debug("value_template: '" + value_template + "'")
-                    if value_template in message:
-                        Domoticz.Debug("message[value_template]: '" + message[value_template] + "'")
-                        payload = message[value_template]
-                        if "payload_off" in configdict and payload == configdict["payload_off"]:
-                            updatedevice = True
-                            nValue = 0
-                        if "payload_on" in configdict and  payload == configdict["payload_on"]:
-                            updatedevice = True
-                            nValue = 1
+                    if m:
+                        value_template = m.group(1)
+                        Domoticz.Debug("value_template: '" + value_template + "'")
+                        if value_template in message:
+                            Domoticz.Debug("message[value_template]: '" + message[value_template] + "'")
+                            payload = message[value_template]
+                            if "payload_off" in configdict and payload == configdict["payload_off"]:
+                                updatedevice = True
+                                nValue = 0
+                            if "payload_on" in configdict and  payload == configdict["payload_on"]:
+                                updatedevice = True
+                                nValue = 1
+                        else:
+                            Domoticz.Debug("message[value_template]: '-'")
                     else:
-                        Domoticz.Debug("message[value_template]: '-'")
+                        Domoticz.Debug("unsupported value_template: '" + configdict['value_template'] + "'")
                 else:
                     Domoticz.Debug("No value_template")
                     payload = message
@@ -895,17 +898,20 @@ class BasePlugin:
                 Domoticz.Debug("Got brightness_state_topic")
                 if "brightness_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['brightness_value_template'])
-                    brightness_value_template = m.group(1)
-                    Domoticz.Debug("brightness_value_template: '" + brightness_value_template + "'")
-                    if brightness_value_template in message:
-                        Domoticz.Debug("message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
-                        payload = message[brightness_value_template]
-                        brightness_scale = 255
-                        if "brightness_scale" in configdict:
-                            brightness_scale = configdict['brightness_scale']
-                        sValue = payload * 100 / brightness_scale
+                    if m:
+                        brightness_value_template = m.group(1)
+                        Domoticz.Debug("brightness_value_template: '" + brightness_value_template + "'")
+                        if brightness_value_template in message:
+                            Domoticz.Debug("message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
+                            payload = message[brightness_value_template]
+                            brightness_scale = 255
+                            if "brightness_scale" in configdict:
+                                brightness_scale = configdict['brightness_scale']
+                            sValue = payload * 100 / brightness_scale
+                        else:
+                            Domoticz.Debug("message[brightness_value_template]: '-'")
                     else:
-                        Domoticz.Debug("message[brightness_value_template]: '-'")
+                        Domoticz.Debug("unsupported template: '" + configdict['brightness_value_template'] + "'")
                 else:
                     payload = int(message)
                     brightness_scale = 255
@@ -926,24 +932,27 @@ class BasePlugin:
                 Domoticz.Debug("Got rgb_state_topic")
                 if "rgb_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['rgb_value_template'])
-                    rgb_value_template = m.group(1)
-                    Domoticz.Debug("rgb_value_template: '" + rgb_value_template + "'")
-                    if rgb_value_template in message:
-                        Domoticz.Debug("message[rgb_value_template]: '" + str(message[rgb_value_template]) + "'")
-                        payload = message[rgb_value_template]
-                        if len(payload)==6 or len(payload)==8 or len(payload)==10:
-                            updatecolor = True
-                            # TODO check contents of cw/ww and set mode accordingly
-                            Color["m"] = 3 # RGB
-                            Color["t"] = 0
-                            Color["r"] = int(payload[0:2], 16)
-                            Color["g"] = int(payload[2:4], 16)
-                            Color["b"] = int(payload[4:6], 16)
-                            Color["cw"] = 0
-                            Color["ww"] = 0
-                            Domoticz.Debug("Color: "+json.dumps(Color))
+                    if m:
+                        rgb_value_template = m.group(1)
+                        Domoticz.Debug("rgb_value_template: '" + rgb_value_template + "'")
+                        if rgb_value_template in message:
+                            Domoticz.Debug("message[rgb_value_template]: '" + str(message[rgb_value_template]) + "'")
+                            payload = message[rgb_value_template]
+                            if len(payload)==6 or len(payload)==8 or len(payload)==10:
+                                updatecolor = True
+                                # TODO check contents of cw/ww and set mode accordingly
+                                Color["m"] = 3 # RGB
+                                Color["t"] = 0
+                                Color["r"] = int(payload[0:2], 16)
+                                Color["g"] = int(payload[2:4], 16)
+                                Color["b"] = int(payload[4:6], 16)
+                                Color["cw"] = 0
+                                Color["ww"] = 0
+                                Domoticz.Debug("Color: "+json.dumps(Color))
+                        else:
+                            Domoticz.Debug("message[rgb_value_template]: '-'")
                     else:
-                        Domoticz.Debug("message[rgb_value_template]: '-'")
+                        Domoticz.Debug("unsupported template: '" + configdict['rgb_value_template'] + "'")
                 else:
                     #TODO: test
                     #payload = message
@@ -956,17 +965,20 @@ class BasePlugin:
                 Domoticz.Debug("Got color_temp_state_topic")
                 if "color_temp_value_template" in configdict:
                     m = re.match(r"^{{value_json\.(.+)}}$", configdict['color_temp_value_template'])
-                    color_temp_value_template = m.group(1)
-                    Domoticz.Debug("color_temp_value_template: '" + color_temp_value_template + "'")
-                    if color_temp_value_template in message:
-                        Domoticz.Debug("message[color_temp_value_template]: '" + str(message[color_temp_value_template]) + "'")
-                        payload = message[color_temp_value_template]
-                        updatecolor = True
-                        Color["m"] = 2 # Color temperature
-                        Color["t"] = int(255*(int(payload)-153)/(500-153))
-                        Domoticz.Debug("Color: "+json.dumps(Color))
+                    if m:
+                        color_temp_value_template = m.group(1)
+                        Domoticz.Debug("color_temp_value_template: '" + color_temp_value_template + "'")
+                        if color_temp_value_template in message:
+                            Domoticz.Debug("message[color_temp_value_template]: '" + str(message[color_temp_value_template]) + "'")
+                            payload = message[color_temp_value_template]
+                            updatecolor = True
+                            Color["m"] = 2 # Color temperature
+                            Color["t"] = int(255*(int(payload)-153)/(500-153))
+                            Domoticz.Debug("Color: "+json.dumps(Color))
+                        else:
+                            Domoticz.Debug("message[color_temp_value_template]: '-'")
                     else:
-                        Domoticz.Debug("message[color_temp_value_template]: '-'")
+                        Domoticz.Debug("unsupported template: '" + configdict['color_temp_value_template'] + "'")
                 else:
                     #TODO: test
                     #payload = message
