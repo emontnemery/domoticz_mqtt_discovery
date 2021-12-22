@@ -1,7 +1,7 @@
 #           MQTT discovery plugin
 #
 """
-<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.5">
+<plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.6">
     <description>
       MQTT discovery, compatible with home-assistant.<br/><br/>
       Specify MQTT server and port.<br/>
@@ -33,6 +33,7 @@
 """
 import Domoticz
 #from Domoticz import Devices # Used for local debugging without Domoticz
+#from Domoticz import Settings # Used for local debugging without Domoticz
 from datetime import datetime
 from itertools import count, filterfalse
 import json
@@ -617,6 +618,42 @@ class BasePlugin:
         else:
             self.mqttClient.Ping()
 
+        # Sensor support
+        # Timing out sensors
+        #Domoticz.Debug( "OnHeartbeat: Settings " + str( Settings ) )
+
+        now            = datetime.now()
+        update_timeout = int(Settings['SensorTimeout'])
+
+        #Domoticz.Debug( "OnHeartbeat: " + str( Devices.items() ) + " " + str( type( Devices ) ) )
+
+        for k, device in Devices.items():
+            if self.isMQTTSensor(device):
+               if len( device.LastUpdate ) > 0:
+                  #Domoticz.Debug( "OnHeartbeat: Device " + device.Name + ", Last update " + str( device.LastUpdate ) )
+
+                  # Workaround of Python issue https://bugs.python.org/issue27400
+                  last_update = None
+                  try:
+                     last_update = datetime.strptime( device.LastUpdate, "%Y-%m-%d %H:%M:%S" )
+                  except TypeError:
+                     last_update = datetime.fromtimestamp( time.mktime( time.strptime( device.LastUpdate, "%Y-%m-%d %H:%M:%S" ) ) )
+
+                  time_delta  = now - last_update
+                  #Domoticz.Debug( "OnHeartbeat: " + device.Name + ", Time delta " + str( time_delta ) + ", Timeout " + str( update_timeout ) + ", Actual " + str( time_delta.total_seconds() / 60 ) )
+
+                  if( ( time_delta.total_seconds() / 60 ) >= update_timeout ):
+                     if device.TimedOut == 0:
+                        device.Update(nValue=device.nValue, sValue=device.sValue, TimedOut=1)#, SuppressTriggers=True)
+
+                        Domoticz.Status(self.deviceStr(self.getUnit(device)) + ": Offline for more than " + str( update_timeout ) + " minutes, Setting TimedOut: 1")
+
+                        self.copyDevices()
+                     else:
+                        #Domoticz.Debug( "OnHeartbeat: Device " + device.Name + " already timed out, do nothing" )
+                        pass
+        # End Sensor support
+
     # Pull configuration and status from tasmota device
     def refreshConfiguration(self, Topic):
         Domoticz.Debug("refreshConfiguration for device with topic: '" + Topic + "'");
@@ -973,7 +1010,9 @@ class BasePlugin:
                 # Do not update if we got Tasmota periodic state update and state has not changed
                 if not isTeleTopic or nValue != device.nValue or sValue != device.sValue:
                     Domoticz.Log( "updateSensor: "+ self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(device.nValue) + "->" + str(nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "'")
-                    device.Update(nValue=nValue,sValue=sValue, BatteryLevel=bat, SignalLevel=rss)
+
+                    device.Update(nValue=nValue,sValue=sValue, BatteryLevel=bat, SignalLevel=rss, TimedOut=0 )
+
                     self.copyDevices()
 
         return result
