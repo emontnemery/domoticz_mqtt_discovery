@@ -648,7 +648,6 @@ class BasePlugin:
                      else:
                         #Domoticz.Debug( "OnHeartbeat: Device " + device.Name + " already timed out, do nothing" )
                         pass
-        # End Sensor support
 
     # Pull configuration and status from tasmota device
     def refreshConfiguration(self, Topic):
