@@ -876,7 +876,6 @@ class BasePlugin:
                 oldconfigdict = json.loads(device.Options['config'])
             except (ValueError, KeyError, TypeError) as e:
                 pass
-            # Sensor support
             # Correction for subsequent messages
             if self.isMQTTSensor(device):
                 config['value_template'] = oldconfigdict['value_template']
