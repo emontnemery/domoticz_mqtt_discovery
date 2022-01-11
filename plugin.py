@@ -422,7 +422,6 @@ class BasePlugin:
               # Sensor support
               if ( component == "sensor" ) and ( node_id != "" ):
                   object_id = node_id
-              # End Sensor support
 
               if validJSON and action == 'config' and ('command_topic' in message or 'state_topic' in message or 'cmd_t' in message or 'stat_t' in message):
                 # Do expansion of the message
