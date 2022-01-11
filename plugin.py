@@ -883,7 +883,6 @@ class BasePlugin:
                 if device.Type == 0x52 and Type == 0x50:
                     Type = 0  # Reset, no change
                     Subtype = 0
-            # End Sensor support
             if Type != 0 and (device.Type != Type or device.SubType != Subtype or device.SwitchType != switchTypeDomoticz or oldconfigdict != config):
                 Domoticz.Log("updateDeviceSettings: " + self.deviceStr(self.getUnit(device)) + ": Device settings not matching, updating Type, SubType, Switchtype and Options['config']")
                 Domoticz.Log("updateDeviceSettings: device.Type: " + str(device.Type) + "->" + str(Type) + ", device.SubType: " + str(device.SubType) + "->" + str(Subtype) +
