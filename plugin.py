@@ -615,7 +615,6 @@ class BasePlugin:
         else:
             self.mqttClient.Ping()
 
-        # Sensor support
         # Timing out sensors
         #Domoticz.Debug( "OnHeartbeat: Settings " + str( Settings ) )
 
