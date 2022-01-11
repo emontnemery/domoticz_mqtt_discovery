@@ -599,7 +599,6 @@ class BasePlugin:
             # Sensor support
             elif self.isMQTTSensor(Device):
                 devicetype = 'sensor'
-            # End Sensor support
             if devicetype:
                 topic = self.discoverytopic + '/' + devicetype + '/' + Devices[Unit].Options['devicename'] + '/config'
                 Domoticz.Log("Clearing topic '" + topic + "'")
