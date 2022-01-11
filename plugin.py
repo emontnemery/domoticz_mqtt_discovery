@@ -843,7 +843,6 @@ class BasePlugin:
                 elif config[ 'device_class' ] == 'humidity':
                     Type = 0x52         # pTypeTempHum
                     Subtype = 0x01      # La Crosse
-        # End Sensor support
 
         matchingDevices = self.getDevices(key='devicename', value=devicename)
         if len(matchingDevices) == 0:
