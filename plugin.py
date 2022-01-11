@@ -1015,7 +1015,6 @@ class BasePlugin:
                     self.copyDevices()
 
         return result
-# End Sensor support
 
     def updateSwitch(self, device, topic, message):
         #Domoticz.Debug("updateSwitch topic: '" + topic + "' switchNo: " + str(switchNo) + " key: '" + key + "' message: '" + str(message) + "'")
