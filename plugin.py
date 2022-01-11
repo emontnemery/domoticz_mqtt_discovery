@@ -897,7 +897,6 @@ class BasePlugin:
                 self.copyDevices()
 
 # ==========================================================UPDATE STATUS from MQTT==============================================================
-# Sensor support
     def isMQTTSensor(self, Device):
         return (((Device.Type == 0x50) or (Device.Type == 0x52)) and    # pTypeTemp or pTypeTemHum
                 ((Device.SubType == 0x05) or (Device.SubType == 0x01))  # La Cross Temp_Hum combined
