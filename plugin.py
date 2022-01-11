@@ -596,7 +596,6 @@ class BasePlugin:
                 Device.SubType == 0x49 and  # sSwitchGeneralSwitch
                 Device.SwitchType == 9):    # STYPE_PushOn
                 devicetype = 'binary_sensor'
-            # Sensor support
             elif self.isMQTTSensor(Device):
                 devicetype = 'sensor'
             if devicetype:
