@@ -834,7 +834,6 @@ class BasePlugin:
             Type = 0xf4        # pTypeGeneralSwitch
             Subtype = 0x49     # sSwitchGeneralSwitch
             switchTypeDomoticz = 15 # STYPE_Blinds Venetian-type  with UP / DOWN / STOP   buttons
-        # Sensor support
         elif devicetype == 'sensor':
             Domoticz.Debug("updateDeviceSettings: devicetype == 'sensor'")
             if 'device_class' in config:
