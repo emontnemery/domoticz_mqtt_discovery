@@ -334,7 +334,7 @@ class BasePlugin:
         self.mqttserveraddress = Parameters["Address"].replace(" ", "")
         self.mqttserverport = Parameters["Port"].replace(" ", "")
         self.discoverytopic = Parameters["Mode2"]
-        self.ignoredtopics = Parameters["Mode4"].split(',')
+        self.ignoredtopics = Parameters["Mode4"].split(',') if len(Parameters["Mode4"]) != 0 else []
 
         options = ""
         try:
@@ -763,6 +763,7 @@ class BasePlugin:
                     if value.startswith(ignoredtopic):
                         ignore = True
                         Domoticz.Debug("isDeviceIgnored: " + str(ignore))
+                        return ignore
         return ignore
 
     def addTasmotaTopics(self, config):
