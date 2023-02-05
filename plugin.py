@@ -1303,7 +1303,7 @@ class BasePlugin:
                     #    brightness_scale = configdict['brightness_scale']
                     # sValue = payload * 100 / brightness_scale
                     Domoticz.Debug("sValue: '" + str(sValue) + "'")
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, AttributeError) as e:
             pass
 
         if updatedevice:
