@@ -1055,15 +1055,18 @@ class BasePlugin:
                     )
 
                     temp = None
+                    hum = None
+
                     try:
                         temp = float(msg[value_template])
                     except (ValueError, KeyError, TypeError):
                         pass
 
-                    hum = None
-                    if value_template != "Humidity":
+                    if value_template == "Humidity":
+                        # Humidity template always requires temperature
                         try:
                             hum = float(msg["Humidity"])
+                            temp = float(msg["Temperature"])
                         except (ValueError, KeyError, TypeError):
                             pass
 
