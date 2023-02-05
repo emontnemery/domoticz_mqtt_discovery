@@ -1119,7 +1119,7 @@ class BasePlugin:
                     + self.deviceStr(self.getUnit(device))
                     + ": Topic: '"
                     + str(topic)
-                    + " 'Setting nValue: "
+                    + "' Setting nValue: "
                     + str(device.nValue)
                     + "->"
                     + str(nValue)
