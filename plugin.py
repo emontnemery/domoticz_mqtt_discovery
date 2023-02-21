@@ -1239,7 +1239,7 @@ class BasePlugin:
                     # Domoticz.Debug("updateSensor: MSG: " + str(msg))
 
                     m = re.match(
-                        r"^{{[\s]*value_json\.*(.+)[\s]*}}$",
+                        r"^\s*{\s*{\s*value_json\.*(.+?)\s*}\s*}\s*$",
                         configdict["value_template"],
                     )
 
@@ -1389,7 +1389,7 @@ class BasePlugin:
                     )
                 if "value_template" in configdict:
                     m = re.match(
-                        r"^{{value_json\.(.+)}}$", configdict["value_template"]
+                        r"^\s*{\s*{\s*value_json\.(.+?)\s*}\s*}$", configdict["value_template"]
                     )
                     if m:
                         value_template = m.group(1)
@@ -1476,7 +1476,7 @@ class BasePlugin:
                 Domoticz.Debug("updateSwitch: Got brightness_state_topic")
                 if "brightness_value_template" in configdict:
                     m = re.match(
-                        r"^{{value_json\.(.+)}}$",
+                        r"^\s*{\s*{\s*value_json\.(.+?)\s*}\s*}\s*$",
                         configdict["brightness_value_template"],
                     )
                     if m:
@@ -1527,7 +1527,7 @@ class BasePlugin:
                 Domoticz.Debug("updateSwitch: Got rgb_state_topic")
                 if "rgb_value_template" in configdict:
                     m = re.match(
-                        r"^{{value_json\.(.+)}}$", configdict["rgb_value_template"]
+                        r"^\s*{\s*{\s*value_json\.(.+?)\s*}\s*}\s*$", configdict["rgb_value_template"]
                     )
                     if m:
                         rgb_value_template = m.group(1)
@@ -1582,7 +1582,7 @@ class BasePlugin:
                 Domoticz.Debug("updateSwitch: Got color_temp_state_topic")
                 if "color_temp_value_template" in configdict:
                     m = re.match(
-                        r"^{{value_json\.(.+)}}$",
+                        r"^\s*{\s*{\s*value_json\.(.+?)\s*}\s*}\s*$",
                         configdict["color_temp_value_template"],
                     )
                     if m:
@@ -1692,7 +1692,7 @@ class BasePlugin:
                 Domoticz.Debug("updateAvailability: Got availability_topic")
                 if "availability_template" in configdict:
                     m = re.match(
-                        r"^{{value_json\.(.+)}}$", configdict["availability_template"]
+                        r"^\s*{\s*{\s*value_json\.(.+?)\s*}\s*}\s*$", configdict["availability_template"]
                     )
                     availability_template = m.group(1)
                     Domoticz.Debug(
