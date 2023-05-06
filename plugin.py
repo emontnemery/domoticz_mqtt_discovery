@@ -1236,9 +1236,9 @@ class BasePlugin:
             if ("state_topic" in devicetopics
                     or "tasmota_tele_topic" in devicetopics):  # Switch status is present in Tasmota tele/STAT message
                 if ("state_topic" in devicetopics):
-                    Domoticz.Debug("Got state_topic")
+                    Domoticz.Debug("updateSwitch: Got state_topic")
                 if ("tasmota_tele_topic" in devicetopics):
-                    Domoticz.Debug("Got tasmota_tele_topic")
+                    Domoticz.Debug("updateSwitch: Got tasmota_tele_topic")
                 if ("tasmota_tele_topic" in devicetopics):
                     isTeleTopic = True  # Suppress device triggers for periodic tele/STAT message
                 if "value_template" in configdict:
