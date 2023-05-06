@@ -424,7 +424,7 @@ class BasePlugin:
                            "' included in ignored topics, message ignored")
             return
 
-        if topic.startswith(self.discoverytopic) and validJSON:
+        if topic.startswith(self.discoverytopic):
             # Discovery topic format:
             # <discovery_prefix>/<component>/[<node_id>/]<object_id>/<action>
             # homeassistant/switch/6A486C_RL_1/config
@@ -437,10 +437,14 @@ class BasePlugin:
             # homeassistant/sensor/6A486C_AM2301_DewPoint/config
             #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 DewPoint","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_DewPoint","dev":{"ids":["6A486C"]},"unit_of_meas":"\\xb0C","dev_cla":"temperature","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'DewPoint\']}}"}'
 
+            # Older Tasmotas (Tasmota 8.1.0)
+            # homeassistant/switch/C6CB2D_RL_1/config
+            #   {"name":"Gaisma Virtuve","cmd_t":"~cmnd/POWER","stat_t":"~tele/STATE","val_tpl":"{{value_json.POWER}}","pl_off":"OFF","pl_on":"ON","avty_t":"~tele/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"C6CB2D_RL_1","device":{"identifiers":["C6CB2D"],"connections":[["mac","D8:F1:5B:C6:CB:2D"]]},"~":"sonoff-touch-C6CB2D/"}
+
             discovery_item = topic.replace(self.discoverytopic + '/', '')
             topiclist = discovery_item.split("/")
 
-            if len(topiclist) == 3 or len(topiclist) == 4:
+            if validJSON:
                 Domoticz.Debug("Discovery: Topic '"+discovery_item +"' valid")
 
                 device_type = topiclist.pop(0)
@@ -455,12 +459,12 @@ class BasePlugin:
                         key = ABBREVIATIONS.get(key, key)
                         payload[key] = payload.pop(abbreviated_key)
 
-                        if CONF_DEVICE in payload:
-                            device = payload[CONF_DEVICE]
-                            for key in list(device.keys()):
-                                abbreviated_key = key
-                                key = DEVICE_ABBREVIATIONS.get(key, key)
-                                device[key] = device.pop(abbreviated_key)
+                    if CONF_DEVICE in payload:
+                        device = payload[CONF_DEVICE]
+                        for key in list(device.keys()):
+                            abbreviated_key = key
+                            key = DEVICE_ABBREVIATIONS.get(key, key)
+                            device[key] = device.pop(abbreviated_key)
 
                     base = payload.pop(TOPIC_BASE, None)
                     if base:
@@ -473,9 +477,8 @@ class BasePlugin:
                                     payload[key] = "{}{}".format(
                                         value[:-1], base)
 
-                            # Add / update the device
-                            self.updateDeviceSettings(
-                                object_id, device_type, payload)
+                    # Add / update the device
+                    self.updateDeviceSettings(object_id, device_type, payload)
         else:
             matchingDevices = self.getDevices(topic=topic)
             for device in matchingDevices:
