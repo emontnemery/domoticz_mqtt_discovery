@@ -1257,9 +1257,9 @@ class BasePlugin:
                             updatedevice = True
                             nValue = 1
                     else:
-                        Domoticz.Debug("message[value_template]: '-'")
+                        Domoticz.Debug("updateSwitch: message[value_template]: '-'")
                 else:
-                    Domoticz.Debug("No value_template")
+                    Domoticz.Debug("updateSwitch: No value_template")
                     payload = message
                     if (("payload_off" in configdict and payload == configdict["payload_off"]) or
                         ("state_open" in configdict and payload == configdict["state_open"]) or
@@ -1288,7 +1288,7 @@ class BasePlugin:
                                    brightness_value_template + "'")
                     if brightness_value_template in message:
                         Domoticz.Debug(
-                            "message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
+                            "updateSwitch: message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
                         payload = message[brightness_value_template]
                         brightness_scale = 255
                         if "brightness_scale" in configdict:
@@ -1296,7 +1296,7 @@ class BasePlugin:
                         sValue = payload * 100 / brightness_scale
                     else:
                         Domoticz.Debug(
-                            "message[brightness_value_template]: '-'")
+                            "updateSwitch: message[brightness_value_template]: '-'")
                 else:
                     payload = int(message)
                     brightness_scale = 255
