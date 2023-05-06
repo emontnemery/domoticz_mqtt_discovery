@@ -1,4 +1,4 @@
-#           MQTT discovery plugin
+#           MQTT discovery plugin (Python 3.8.10)
 #
 """
 <plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.6">
@@ -352,7 +352,7 @@ class BasePlugin:
             Domoticz.Debugging(2 + 4 + 8)
         self.mqttserveraddress = Parameters["Address"].replace(" ", "")
         self.mqttserverport = Parameters["Port"].replace(" ", "")
-        self.discoverytopic = Parameters["Mode2"]
+        self.discoverytopic = Parameters["Mode2"].rstrip('/')
         self.ignoredtopics = Parameters["Mode4"].split(",")
 
         options = ""
@@ -386,7 +386,6 @@ class BasePlugin:
         # Connect to MQTT server
         self.prefixpos = 0
         self.topicpos = 0
-        self.discoverytopiclist = self.discoverytopic.split('/')
         self.mqttClient = MqttClient(self.mqttserveraddress, self.mqttserverport, self.onMQTTConnected,
                                      self.onMQTTDisconnected, self.onMQTTPublish, self.onMQTTSubscribed)
 
@@ -417,7 +416,6 @@ class BasePlugin:
         except ValueError:
             message = rawmessage.decode("utf8")
 
-        topiclist = topic.split("/")
         if self.debugging == "Verbose" or self.debugging == "Verbose+":
             DumpMQTTMessageToLog(topic, rawmessage, "onMQTTPublish: ")
 
@@ -426,22 +424,30 @@ class BasePlugin:
                            "' included in ignored topics, message ignored")
             return
 
-        if topic.startswith(self.discoverytopic):
-            discoverytopiclen = len(self.discoverytopiclist)
+        if topic.startswith(self.discoverytopic) and validJSON:
             # Discovery topic format:
             # <discovery_prefix>/<component>/[<node_id>/]<object_id>/<action>
-            if len(topiclist) == discoverytopiclen + 3 or len(topiclist) == discoverytopiclen + 4:
-                component = topiclist[discoverytopiclen]
-                if len(topiclist) == discoverytopiclen + 3:
-                    node_id = ''
-                    object_id = topiclist[discoverytopiclen+1]
-                    action = topiclist[discoverytopiclen+2]
-                else:
-                    node_id = topiclist[discoverytopiclen+1]
-                    object_id = topiclist[discoverytopiclen+2]
-                    action = topiclist[discoverytopiclen+3]
+            # homeassistant/switch/6A486C_RL_1/config
+            #   {"name":"Vent OUT","stat_t":"tele/vent-out-6A486C/STATE","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","cmd_t":"cmnd/vent-out-6A486C/POWER","pl_off":"OFF","pl_on":"ON","val_tpl":"{{value_json.POWER}}","uniq_id":"6A486C_RL_1","dev":{"ids":["6A486C"]}}'
 
-                if validJSON and action == 'config' and ('command_topic' in message or 'state_topic' in message or 'cmd_t' in message or 'stat_t' in message):
+            # homeassistant/sensor/6A486C_AM2301_Temperature/config
+            #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 Temperature","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_Temperature","dev":{"ids":["6A486C"]},"unit_of_meas":"\\xb0C","dev_cla":"temperature","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'Temperature\']}}"}'
+            # homeassistant/sensor/6A486C_AM2301_Humidity/config
+            #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 Humidity","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_Humidity","dev":{"ids":["6A486C"]},"unit_of_meas":"%","dev_cla":"humidity","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'Humidity\']}}"}'
+            # homeassistant/sensor/6A486C_AM2301_DewPoint/config
+            #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 DewPoint","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_DewPoint","dev":{"ids":["6A486C"]},"unit_of_meas":"\\xb0C","dev_cla":"temperature","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'DewPoint\']}}"}'
+
+            discovery_item = topic.replace(self.discoverytopic + '/', '')
+            topiclist = discovery_item.split("/")
+
+            if len(topiclist) == 3 or len(topiclist) == 4:
+                Domoticz.Debug("Discovery: Topic '"+discovery_item +"' valid")
+
+                device_type = topiclist.pop(0)
+                action = topiclist.pop()
+                object_id = topiclist.pop()
+
+                if action == 'config' and ('command_topic' in message or 'state_topic' in message or 'cmd_t' in message or 'stat_t' in message):
                     # Do expansion of the message
                     payload = dict(message)
                     for key in list(payload.keys()):
@@ -469,7 +475,7 @@ class BasePlugin:
 
                             # Add / update the device
                             self.updateDeviceSettings(
-                                object_id, component, payload)
+                                object_id, device_type, payload)
         else:
             matchingDevices = self.getDevices(topic=topic)
             for device in matchingDevices:
