@@ -871,15 +871,26 @@ class BasePlugin:
 
     # =============================================================DEVICE CONFIG==============================================================
     def updateDeviceSettings(self, devicename, devicetype, config):
-        Domoticz.Debug("updateDeviceSettings devicename: '" + devicename +
-                       "' devicetype: '" + devicetype + "' config: '" + str(config) + "'")
+        Domoticz.Debug(
+            "updateDeviceSettings: devicename: '"
+            + devicename
+            + "' devicetype: '"
+            + devicetype
+            + "' config: '"
+            + str(config)
+            + "'"
+        )
 
         TypeName = ""
         Type = 0
         Subtype = 0
         switchTypeDomoticz = 0  # OnOff
-        if (devicetype == 'light' or devicetype == 'switch') and ('brightness_command_topic' in config or 'color_temp_command_topic' in config or 'rgb_command_topic' in config):
-            Domoticz.Debug("devicetype == 'light'")
+        if (devicetype == "light" or devicetype == "switch") and (
+            "brightness_command_topic" in config
+            or "color_temp_command_topic" in config
+            or "rgb_command_topic" in config
+        ):
+            Domoticz.Debug("updateDeviceSettings: devicetype == 'light'")
             switchTypeDomoticz = 7  # Dimmer
             rgbww = 0
             if "white_value_command_topic" in config:
@@ -888,62 +899,78 @@ class BasePlugin:
                 rgbww = 2
             if "rgb_command_topic" in config:
                 rgbww = rgbww + 3
-            if rgbww == 2:     # WW
-                Type = 0xf1    # pTypeColorSwitch
+            if rgbww == 2:  # WW
+                Type = 0xF1  # pTypeColorSwitch
                 Subtype = 0x08  # sTypeColor_CW_WW
-            elif rgbww == 3:   # RGB
-                Type = 0xf1    # pTypeColorSwitch
+            elif rgbww == 3:  # RGB
+                Type = 0xF1  # pTypeColorSwitch
                 Subtype = 0x02  # sTypeColor_RGB
-            elif rgbww == 4:   # RGBW
-                Type = 0xf1    # pTypeColorSwitch
+            elif rgbww == 4:  # RGBW
+                Type = 0xF1  # pTypeColorSwitch
                 Subtype = 0x06  # sTypeColor_RGB_W_Z
-            elif rgbww == 5:   # RGBWW
-                Type = 0xf1    # pTypeColorSwitch
+            elif rgbww == 5:  # RGBWW
+                Type = 0xF1  # pTypeColorSwitch
                 Subtype = 0x07  # sTypeColor_RGB_CW_WW_Z
             else:
-                TypeName = 'Switch'
-                Type = 0xf4    # pTypeGeneralSwitch
+                TypeName = "Switch"
+                Type = 0xF4  # pTypeGeneralSwitch
                 Subtype = 0x49  # sSwitchGeneralSwitch
-        # Switch or light without dimming/color/color temperature
-        elif devicetype == 'switch' or devicetype == 'light':
-            Domoticz.Debug("devicetype == 'switch'")
-            TypeName = 'Switch'
-            Type = 0xf4        # pTypeGeneralSwitch
-            Subtype = 0x49     # sSwitchGeneralSwitch
-        elif devicetype == 'binary_sensor':
-            TypeName = 'Switch'
-            Type = 0xf4        # pTypeGeneralSwitch
-            Subtype = 0x49     # sSwitchGeneralSwitch
+        elif (
+            devicetype == "switch" or devicetype == "light"
+        ):  # Switch or light without dimming/color/color temperature
+            Domoticz.Debug("updateDeviceSettings: devicetype == 'switch'")
+            TypeName = "Switch"
+            Type = 0xF4  # pTypeGeneralSwitch
+            Subtype = 0x49  # sSwitchGeneralSwitch
+        elif devicetype == "binary_sensor":
+            TypeName = "Switch"
+            Type = 0xF4  # pTypeGeneralSwitch
+            Subtype = 0x49  # sSwitchGeneralSwitch
             switchTypeDomoticz = 9  # STYPE_PushOn
-        elif (devicetype == 'cover') and ('set_position_topic' in config):
-            Type = 0xf4        # pTypeGeneralSwitch
-            Subtype = 0x49     # sSwitchGeneralSwitch
+        elif (devicetype == "cover") and ("set_position_topic" in config):
+            Type = 0xF4  # pTypeGeneralSwitch
+            Subtype = 0x49  # sSwitchGeneralSwitch
             switchTypeDomoticz = 13  # Blinds percent
-        elif devicetype == 'cover':
-            TypeName = 'Switch'
-            Type = 0xf4        # pTypeGeneralSwitch
-            Subtype = 0x49     # sSwitchGeneralSwitch
-            switchTypeDomoticz = 15  # STYPE_Blinds Venetian-type  with UP / DOWN / STOP   buttons
+        elif devicetype == "cover":
+            TypeName = "Switch"
+            Type = 0xF4  # pTypeGeneralSwitch
+            Subtype = 0x49  # sSwitchGeneralSwitch
+            switchTypeDomoticz = (
+                15  # STYPE_Blinds Venetian-type  with UP / DOWN / STOP   buttons
+            )
+        elif devicetype == "sensor":
+            Domoticz.Debug("updateDeviceSettings: devicetype == 'sensor'")
+            if "device_class" in config:
+                if config["device_class"] == "temperature":
+                    Type = 0x50  # pTypeTemp RFXTrx.h
+                    Subtype = 0x01  # LaCrosse TX3
+                elif config["device_class"] == "humidity":
+                    Type = 0x52  # pTypeTempHum
+                    Subtype = 0x01  # La Crosse
 
         matchingDevices = self.getDevices(key="devicename", value=devicename)
         if len(matchingDevices) == 0:
             Domoticz.Log(
-                "updateDeviceSettings: Did not find device with key='devicename', value = '" + devicename + "'")
+                "updateDeviceSettings: Did not find device with key='devicename', value = '"
+                + devicename
+                + "'"
+            )
             # Unknown device
-            Domoticz.Log("updateDeviceSettings: TypeName: '" +
-                         TypeName + "' Type: " + str(Type))
-            if TypeName != '':
+            Domoticz.Log(
+                "updateDeviceSettings: TypeName: '" + TypeName + "' Type: " + str(Type)
+            )
+            if TypeName != "":
                 self.addTasmotaTopics(config)
                 if not self.isDeviceIgnored(config):
-                    self.makeDevice(devicename, TypeName,
-                                    switchTypeDomoticz, config)
+                    self.makeDevice(devicename, TypeName, switchTypeDomoticz, config)
                     # Update subscription list
                     self.mqttClient.Subscribe(self.getTopics())
             elif Type != 0:
                 self.addTasmotaTopics(config)
                 if not self.isDeviceIgnored(config):
                     self.makeDeviceRaw(
-                        devicename, Type, Subtype, switchTypeDomoticz, config)
+                        devicename, Type, Subtype, switchTypeDomoticz, config
+                    )
                     # Update subscription list
                     self.mqttClient.Subscribe(self.getTopics())
         else:
@@ -955,18 +982,54 @@ class BasePlugin:
                 oldconfigdict = json.loads(device.Options["config"])
             except (ValueError, KeyError, TypeError) as e:
                 pass
-            if Type != 0 and (device.Type != Type or device.SubType != Subtype or device.SwitchType != switchTypeDomoticz or oldconfigdict != config):
-                Domoticz.Log("updateDeviceSettings: " + self.deviceStr(self.getUnit(device)) +
-                             ": Device settings not matching, updating Type, SubType, Switchtype and Options['config']")
-                Domoticz.Log("updateDeviceSettings: device.Type: " + str(device.Type) + "->" + str(Type) + ", device.SubType: " + str(device.SubType) + "->" + str(Subtype) +
-                             ", device.SwitchType: " + str(device.SwitchType) + "->" + str(switchTypeDomoticz) +
-                             ", device.Options['config']: " + str(oldconfigdict) + " -> " + str(config))
+            # Correction for subsequent messages
+            if self.isMQTTSensor(device):
+                config["value_template"] = oldconfigdict["value_template"]
+                if device.Type == 0x52 and Type == 0x50:
+                    Type = 0  # Reset, no change
+                    Subtype = 0
+            if Type != 0 and (
+                device.Type != Type
+                or device.SubType != Subtype
+                or device.SwitchType != switchTypeDomoticz
+                or oldconfigdict != config
+            ):
+                Domoticz.Log(
+                    "updateDeviceSettings: "
+                    + self.deviceStr(self.getUnit(device))
+                    + ": Device settings not matching, updating Type, SubType, Switchtype and Options['config']"
+                )
+                Domoticz.Log(
+                    "updateDeviceSettings: device.Type: "
+                    + str(device.Type)
+                    + "->"
+                    + str(Type)
+                    + ", device.SubType: "
+                    + str(device.SubType)
+                    + "->"
+                    + str(Subtype)
+                    + ", device.SwitchType: "
+                    + str(device.SwitchType)
+                    + "->"
+                    + str(switchTypeDomoticz)
+                    + ", device.Options['config']: "
+                    + str(oldconfigdict)
+                    + " -> "
+                    + str(config)
+                )
                 nValue = device.nValue
                 sValue = device.sValue
                 Options = dict(device.Options)
-                Options['config'] = json.dumps(config)
-                device.Update(nValue=nValue, sValue=sValue, Type=Type, Subtype=Subtype,
-                              Switchtype=switchTypeDomoticz, Options=Options, SuppressTriggers=True)
+                Options["config"] = json.dumps(config)
+                device.Update(
+                    nValue=nValue,
+                    sValue=sValue,
+                    Type=Type,
+                    Subtype=Subtype,
+                    Switchtype=switchTypeDomoticz,
+                    Options=Options,
+                    SuppressTriggers=True,
+                )
                 self.copyDevices()
 
     # ==========================================================UPDATE STATUS from MQTT==============================================================
