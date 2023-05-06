@@ -1065,12 +1065,12 @@ class BasePlugin:
             ):  # Switch status is present in Tasmota tele/STAT message
                 if "state_topic" in devicetopics:
                     Domoticz.Debug(
-                        "UpdateSensor: Got state_topic " +
+                        "updateSensor: Got state_topic " +
                         configdict["state_topic"]
                     )
                 if "tasmota_tele_topic" in devicetopics:
                     Domoticz.Debug(
-                        "UpdateSensor: Got tasmota_tele_topic "
+                        "updateSensor: Got tasmota_tele_topic "
                         + configdict["tasmota_tele_topic"]
                     )
                 if "tasmota_tele_topic" in devicetopics:
