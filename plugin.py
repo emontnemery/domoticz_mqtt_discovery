@@ -751,7 +751,7 @@ class BasePlugin:
                         if key == 'availability_topic' or key == 'state_topic' or key == 'brightness_state_topic' or key == 'rgb_state_topic' or key == 'color_temp_state_topic' or key == 'position_topic':
                             topics.add(value)
                     except (TypeError) as e:
-                        Domoticz.Error("getTopics: Error: " + str(e))
+                        Domoticz.Error("getTopics: device " + Device.Name + " topic error: " + str(e))
                         pass
                 if "tasmota_tele_topic" in configdict:
                     # Subscribe to all Tasmota state topics
@@ -764,8 +764,9 @@ class BasePlugin:
                     state_topic = re.sub(r"\/STATE", "/#", state_topic)
                     topics.add(state_topic)
             except (ValueError, KeyError, TypeError) as e:
-                Domoticz.Error("getTopics: Error: " + str(e))
+                Domoticz.Error("getTopics: " + Device.Name + " error: " + str(e))
                 pass
+
         topics.add(self.discoverytopic+'/#')
         Domoticz.Debug("getTopics: '" + str(topics) + "'")
         return list(topics)
