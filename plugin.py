@@ -1,4 +1,4 @@
-#           MQTT discovery plugin
+#           MQTT discovery plugin (Python 3.8.10)
 #
 """
 <plugin key="MQTTDiscovery" name="MQTT discovery" version="0.0.6">
@@ -83,12 +83,7 @@ class MqttClient:
             self.Close()
         self.isConnected = False
         self.mqttConn = Domoticz.Connection(
-            Name=self.Address,
-            Transport="TCP/IP",
-            Protocol="MQTT",
-            Address=self.Address,
-            Port=self.Port,
-        )
+            Name=self.Address, Transport="TCP/IP", Protocol="MQTT", Address=self.Address, Port=self.Port)
         self.mqttConn.Connect()
 
     def Connect(self):
@@ -96,14 +91,9 @@ class MqttClient:
         if self.mqttConn == None:
             self.Open()
         else:
-            ID = (
-                "Domoticz_"
-                + Parameters["Key"]
-                + "_"
-                + str(Parameters["HardwareID"])
-                + "_"
-                + str(int(time.time()))
-            )
+            ID = 'Domoticz_' + \
+                Parameters['Key']+'_' + \
+                str(Parameters['HardwareID'])+'_'+str(int(time.time()))
             Domoticz.Log("MQTT CONNECT ID: '" + ID + "'")
             self.mqttConn.Send({"Verb": "CONNECT", "ID": ID})
 
@@ -119,24 +109,19 @@ class MqttClient:
         if self.mqttConn == None or not self.isConnected:
             self.Open()
         else:
-            self.mqttConn.Send(
-                {
-                    "Verb": "PUBLISH",
-                    "Topic": topic,
-                    "Payload": bytearray(payload, "utf-8"),
-                    "Retain": retain,
-                }
-            )
+            self.mqttConn.Send({'Verb': 'PUBLISH', 'Topic': topic, 'Payload': bytearray(
+                payload, 'utf-8'), 'Retain': retain})
 
     def Subscribe(self, topics):
         Domoticz.Debug("MqttClient::Subscribe")
         subscriptionlist = []
         for topic in topics:
-            subscriptionlist.append({"Topic": topic, "QoS": 0})
-        if self.mqttConn == None or not self.isConnected:
+            subscriptionlist.append({'Topic': topic, 'QoS': 0})
+        if (self.mqttConn == None or not self.isConnected):
             self.Open()
         else:
-            self.mqttConn.Send({"Verb": "SUBSCRIBE", "Topics": subscriptionlist})
+            self.mqttConn.Send(
+                {'Verb': 'SUBSCRIBE', 'Topics': subscriptionlist})
 
     def Close(self):
         Domoticz.Log("MqttClient::Close")
@@ -146,41 +131,30 @@ class MqttClient:
 
     def onConnect(self, Connection, Status, Description):
         Domoticz.Debug("MqttClient::onConnect")
-        if Status == 0:
-            Domoticz.Log(
-                "Successful connect to: " + Connection.Address + ":" + Connection.Port
-            )
+        if (Status == 0):
+            Domoticz.Log("Successful connect to: " +
+                         Connection.Address+":"+Connection.Port)
             self.Connect()
         else:
-            Domoticz.Log(
-                "Failed to connect to: "
-                + Connection.Address
-                + ":"
-                + Connection.Port
-                + ", Description: "
-                + Description
-            )
+            Domoticz.Log("Failed to connect to: "+Connection.Address +
+                         ":"+Connection.Port+", Description: "+Description)
 
     def onDisconnect(self, Connection):
-        Domoticz.Log(
-            "MqttClient::onDisonnect Disconnected from: "
-            + Connection.Address
-            + ":"
-            + Connection.Port
-        )
+        Domoticz.Log("MqttClient::onDisonnect Disconnected from: " +
+                     Connection.Address+":"+Connection.Port)
         self.Close()
         # TODO: Reconnect?
         if self.mqttDisconnectedCb != None:
             self.mqttDisconnectedCb()
 
     def onMessage(self, Connection, Data):
-        topic = ""
-        if "Topic" in Data:
-            topic = Data["Topic"]
-        payloadStr = ""
-        if "Payload" in Data:
-            payloadStr = Data["Payload"].decode("utf8", "replace")
-            payloadStr = str(payloadStr.encode("unicode_escape"))
+        topic = ''
+        if 'Topic' in Data:
+            topic = Data['Topic']
+        payloadStr = ''
+        if 'Payload' in Data:
+            payloadStr = Data['Payload'].decode('utf8', 'replace')
+            payloadStr = str(payloadStr.encode('unicode_escape'))
         # Domoticz.Debug("MqttClient::onMessage called for connection: '"+Connection.Name+"' type:'"+Data['Verb']+"' topic:'"+topic+"' payload:'" + payloadStr + "'")
 
         if Data["Verb"] == "CONNACK":
@@ -197,8 +171,8 @@ class MqttClient:
                 self.mqttPublishCb(topic, Data["Payload"])
 
 
-CONF_DEVICE = "device"
-TOPIC_BASE = "~"
+CONF_DEVICE = 'device'
+TOPIC_BASE = '~'
 
 ABBREVIATIONS = {
     "aux_cmd_t": "aux_command_topic",
@@ -343,11 +317,9 @@ class BasePlugin:
     debugging = "Normal"
     cachedDeviceNames = {}
 
-    options = {
-        "addDiscoveredDeviceUsed": True,  # Newly discovered devices added as "used" (visible in swithces tab) or not (only visible in devices list)
-        "updateRSSI": False,  # Store Tasmota RSSI
-        "updateVCC": False,
-    }  # Store Tasmota VCC as battery level
+    options = {"addDiscoveredDeviceUsed": True,  # Newly discovered devices added as "used" (visible in swithces tab) or not (only visible in devices list)
+               "updateRSSI": False,             # Store Tasmota RSSI
+               "updateVCC": False}              # Store Tasmota VCC as battery level
 
     def copyDevices(self):
         # self.cachedDevices = copy.deepcopy(Devices)
@@ -380,7 +352,7 @@ class BasePlugin:
             Domoticz.Debugging(2 + 4 + 8)
         self.mqttserveraddress = Parameters["Address"].replace(" ", "")
         self.mqttserverport = Parameters["Port"].replace(" ", "")
-        self.discoverytopic = Parameters["Mode2"]
+        self.discoverytopic = Parameters["Mode2"].rstrip('/')
         self.ignoredtopics = Parameters["Mode4"].split(",")
 
         options = ""
@@ -395,16 +367,13 @@ class BasePlugin:
             #   <option label="Unused" value="0"/>
             #   <option label="Used" value="1"  default="true" />
             # </options>
-            Domoticz.Log(
-                "Warning: could not load plugin options '"
-                + Parameters["Mode3"]
-                + "' as JSON object"
-            )
+            Domoticz.Log("Warning: could not load plugin options '" +
+                         Parameters["Mode3"] + "' as JSON object")
             try:
                 if int(options) == 0:
-                    self.options["addDiscoveredDeviceUsed"] = False
+                    self.options['addDiscoveredDeviceUsed'] = False
                 if int(options) == 1:
-                    self.options["addDiscoveredDeviceUsed"] = True
+                    self.options['addDiscoveredDeviceUsed'] = True
             except ValueError:  # Options not a valid int
                 pass
         elif type(options) == dict:
@@ -417,15 +386,8 @@ class BasePlugin:
         # Connect to MQTT server
         self.prefixpos = 0
         self.topicpos = 0
-        self.discoverytopiclist = self.discoverytopic.split("/")
-        self.mqttClient = MqttClient(
-            self.mqttserveraddress,
-            self.mqttserverport,
-            self.onMQTTConnected,
-            self.onMQTTDisconnected,
-            self.onMQTTPublish,
-            self.onMQTTSubscribed,
-        )
+        self.mqttClient = MqttClient(self.mqttserveraddress, self.mqttserverport, self.onMQTTConnected,
+                                     self.onMQTTDisconnected, self.onMQTTPublish, self.onMQTTSubscribed)
 
         self.copyDevices()
 
@@ -454,48 +416,42 @@ class BasePlugin:
         except ValueError:
             message = rawmessage.decode("utf8")
 
-        topiclist = topic.split("/")
         if self.debugging == "Verbose" or self.debugging == "Verbose+":
             DumpMQTTMessageToLog(topic, rawmessage, "onMQTTPublish: ")
 
         if topic in self.ignoredtopics:
-            Domoticz.Debug(
-                "Topic: '" + topic + "' included in ignored topics, message ignored"
-            )
+            Domoticz.Debug("Topic: '"+topic +
+                           "' included in ignored topics, message ignored")
             return
 
         if topic.startswith(self.discoverytopic):
-            discoverytopiclen = len(self.discoverytopiclist)
             # Discovery topic format:
             # <discovery_prefix>/<component>/[<node_id>/]<object_id>/<action>
-            if (
-                len(topiclist) == discoverytopiclen + 3
-                or len(topiclist) == discoverytopiclen + 4
-            ):
-                component = topiclist[discoverytopiclen]
-                if len(topiclist) == discoverytopiclen + 3:
-                    node_id = ""
-                    object_id = topiclist[discoverytopiclen + 1]
-                    action = topiclist[discoverytopiclen + 2]
-                else:
-                    node_id = topiclist[discoverytopiclen + 1]
-                    object_id = topiclist[discoverytopiclen + 2]
-                    action = topiclist[discoverytopiclen + 3]
+            # homeassistant/switch/6A486C_RL_1/config
+            #   {"name":"Vent OUT","stat_t":"tele/vent-out-6A486C/STATE","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","cmd_t":"cmnd/vent-out-6A486C/POWER","pl_off":"OFF","pl_on":"ON","val_tpl":"{{value_json.POWER}}","uniq_id":"6A486C_RL_1","dev":{"ids":["6A486C"]}}'
 
-                # Sensor support
-                if (component == "sensor") and (node_id != ""):
-                    object_id = node_id
+            # homeassistant/sensor/6A486C_AM2301_Temperature/config
+            #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 Temperature","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_Temperature","dev":{"ids":["6A486C"]},"unit_of_meas":"\\xb0C","dev_cla":"temperature","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'Temperature\']}}"}'
+            # homeassistant/sensor/6A486C_AM2301_Humidity/config
+            #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 Humidity","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_Humidity","dev":{"ids":["6A486C"]},"unit_of_meas":"%","dev_cla":"humidity","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'Humidity\']}}"}'
+            # homeassistant/sensor/6A486C_AM2301_DewPoint/config
+            #   {"name":"Gar\\u0101\\u017ea Vent OUT AM2301 DewPoint","stat_t":"tele/vent-out-6A486C/SENSOR","avty_t":"tele/vent-out-6A486C/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"6A486C_AM2301_DewPoint","dev":{"ids":["6A486C"]},"unit_of_meas":"\\xb0C","dev_cla":"temperature","frc_upd":true,"val_tpl":"{{value_json[\'AM2301\'][\'DewPoint\']}}"}'
 
-                if (
-                    validJSON
-                    and action == "config"
-                    and (
-                        "command_topic" in message
-                        or "state_topic" in message
-                        or "cmd_t" in message
-                        or "stat_t" in message
-                    )
-                ):
+            # Older Tasmotas (Tasmota 8.1.0)
+            # homeassistant/switch/C6CB2D_RL_1/config
+            #   {"name":"Gaisma Virtuve","cmd_t":"~cmnd/POWER","stat_t":"~tele/STATE","val_tpl":"{{value_json.POWER}}","pl_off":"OFF","pl_on":"ON","avty_t":"~tele/LWT","pl_avail":"Online","pl_not_avail":"Offline","uniq_id":"C6CB2D_RL_1","device":{"identifiers":["C6CB2D"],"connections":[["mac","D8:F1:5B:C6:CB:2D"]]},"~":"sonoff-touch-C6CB2D/"}
+
+            discovery_item = topic.replace(self.discoverytopic + '/', '')
+            topiclist = discovery_item.split("/")
+
+            if validJSON:
+                Domoticz.Debug("Discovery: Topic '"+discovery_item +"' valid")
+
+                device_type = topiclist.pop(0)
+                action = topiclist.pop()
+                object_id = topiclist.pop()
+
+                if action == 'config' and ('command_topic' in message or 'state_topic' in message or 'cmd_t' in message or 'stat_t' in message):
                     # Do expansion of the message
                     payload = dict(message)
                     for key in list(payload.keys()):
@@ -514,16 +470,19 @@ class BasePlugin:
                     if base:
                         for key, value in payload.items():
                             if isinstance(value, str) and value:
-                                if value[0] == TOPIC_BASE and key.endswith("_topic"):
-                                    payload[key] = "{}{}".format(base, value[1:])
-                                if value[-1] == TOPIC_BASE and key.endswith("_topic"):
-                                    payload[key] = "{}{}".format(value[:-1], base)
+                                if value[0] == TOPIC_BASE and key.endswith('_topic'):
+                                    payload[key] = "{}{}".format(
+                                        base, value[1:])
+                                if value[-1] == TOPIC_BASE and key.endswith('_topic'):
+                                    payload[key] = "{}{}".format(
+                                        value[:-1], base)
 
                     # Add / update the device
-                    self.updateDeviceSettings(object_id, component, payload)
+                    self.updateDeviceSettings(object_id, device_type, payload)
         else:
             matchingDevices = self.getDevices(topic=topic)
             for device in matchingDevices:
+                # Try to update switch state
                 self.updateSwitch(device, topic, message)
 
                 # Try to update availability
@@ -551,19 +510,19 @@ class BasePlugin:
     def onMQTTSubscribed(self):
         # (Re)subscribed, refresh device info
         Domoticz.Debug("onMQTTSubscribed")
-        matchingDevices = self.getDevices(hasconfigkey="tasmota_tele_topic")
+        matchingDevices = self.getDevices(hasconfigkey='tasmota_tele_topic')
         topics = set()
         for device in matchingDevices:
             # Refresh Tasmota specific data
             try:
-                configdict = json.loads(device.Options["config"])
-                cmnd_topic = re.sub(
-                    r"^tele\/", "cmnd/", configdict["tasmota_tele_topic"]
-                )  # Replace tele with cmnd
-                cmnd_topic = re.sub(
-                    r"\/tele\/", "/cmnd/", cmnd_topic
-                )  # Replace tele with cmnd
-                cmnd_topic = re.sub(r"\/STATE", "", cmnd_topic)  # Remove '/STATE'
+                configdict = json.loads(device.Options['config'])
+                # Replace tele with cmnd
+                cmnd_topic = re.sub(r"^tele\/", "cmnd/",
+                                    configdict['tasmota_tele_topic'])
+                # Replace tele with cmnd
+                cmnd_topic = re.sub(r"\/tele\/", "/cmnd/", cmnd_topic)
+                # Remove '/STATE'
+                cmnd_topic = re.sub(r"\/STATE", "", cmnd_topic)
                 if cmnd_topic not in topics:
                     self.refreshConfiguration(cmnd_topic)
                 topics.add(cmnd_topic)
@@ -573,87 +532,63 @@ class BasePlugin:
 
     # ==========================================================DASHBOARD COMMAND=============================================================
     def onCommand(self, Unit, Command, Level, sColor):
-        Domoticz.Log(
-            "onCommand "
-            + self.deviceStr(Unit)
-            + ": Command: '"
-            + str(Command)
-            + "', Level: "
-            + str(Level)
-            + ", Color:"
-            + str(sColor)
-        )
+        Domoticz.Log("onCommand " + self.deviceStr(Unit) + ": Command: '" +
+                     str(Command) + "', Level: " + str(Level) + ", Color:" + str(sColor))
 
         if Unit in Devices:
             try:
                 # TODO: Make sure the relevant command topic exists
-                configdict = json.loads(Devices[Unit].Options["config"])
+                configdict = json.loads(Devices[Unit].Options['config'])
                 if Command == "Set Level" and "set_position_topic" in configdict:
                     self.mqttClient.Publish(
-                        configdict["set_position_topic"], str(Level)
-                    )
+                        configdict["set_position_topic"], str(Level))
                 elif Command == "Set Brightness" or Command == "Set Level":
                     self.mqttClient.Publish(
-                        configdict["brightness_command_topic"], str(Level)
-                    )
+                        configdict["brightness_command_topic"], str(Level))
                 elif Command == "On":
                     payload = "ON"
                     if "payload_on" in configdict:
                         payload = configdict["payload_on"]
                     elif "payload_close" in configdict:
                         payload = configdict["payload_close"]
-                    self.mqttClient.Publish(configdict["command_topic"], payload)
+                    self.mqttClient.Publish(
+                        configdict["command_topic"], payload)
                 elif Command == "Off":
                     payload = "OFF"
                     if "payload_off" in configdict:
                         payload = configdict["payload_off"]
                     elif "payload_open" in configdict:
                         payload = configdict["payload_open"]
-                    self.mqttClient.Publish(configdict["command_topic"], payload)
+                    self.mqttClient.Publish(
+                        configdict["command_topic"], payload)
                 elif Command == "Stop":
                     payload = "STOP"
                     if "payload_stop" in configdict:
                         payload = configdict["payload_stop"]
-                    self.mqttClient.Publish(configdict["command_topic"], payload)
+                    self.mqttClient.Publish(
+                        configdict["command_topic"], payload)
                 elif Command == "Set Color":
                     try:
                         Color = json.loads(sColor)
                     except (ValueError, KeyError, TypeError) as e:
                         Domoticz.Error(
-                            "onCommand: Illegal color: '" + str(sColor) + "'"
-                        )
+                            "onCommand: Illegal color: '" + str(sColor) + "'")
                     # TODO: This is not really correct, should check color mode
-                    r = int(Color["r"] * Level / 100)
-                    g = int(Color["g"] * Level / 100)
-                    b = int(Color["b"] * Level / 100)
-                    cw = int(Color["cw"] * Level / 100)
-                    ww = int(Color["ww"] * Level / 100)
-                    if (
-                        "rgb_command_topic" in configdict
-                        and "brightness_command_topic" in configdict
-                    ):
+                    r = int(Color["r"]*Level/100)
+                    g = int(Color["g"]*Level/100)
+                    b = int(Color["b"]*Level/100)
+                    cw = int(Color["cw"]*Level/100)
+                    ww = int(Color["ww"]*Level/100)
+                    if "rgb_command_topic" in configdict and "brightness_command_topic" in configdict:
+                        self.mqttClient.Publish(configdict["rgb_command_topic"], format(
+                            r, '02x') + format(g, '02x') + format(b, '02x') + format(cw, '02x') + format(ww, '02x'))
                         self.mqttClient.Publish(
-                            configdict["rgb_command_topic"],
-                            format(r, "02x")
-                            + format(g, "02x")
-                            + format(b, "02x")
-                            + format(cw, "02x")
-                            + format(ww, "02x"),
-                        )
+                            configdict["brightness_command_topic"], str(Level))
+                    elif "color_temp_command_topic" in configdict and "brightness_command_topic" in configdict:
                         self.mqttClient.Publish(
-                            configdict["brightness_command_topic"], str(Level)
-                        )
-                    elif (
-                        "color_temp_command_topic" in configdict
-                        and "brightness_command_topic" in configdict
-                    ):
+                            configdict["color_temp_command_topic"], str(Color["t"]*(500-153)/255+153))
                         self.mqttClient.Publish(
-                            configdict["color_temp_command_topic"],
-                            str(Color["t"] * (500 - 153) / 255 + 153),
-                        )
-                        self.mqttClient.Publish(
-                            configdict["brightness_command_topic"], str(Level)
-                        )
+                            configdict["brightness_command_topic"], str(Level))
             except (ValueError, KeyError, TypeError) as e:
                 Domoticz.Error("onCommand: Error: " + str(e))
         else:
@@ -668,30 +603,25 @@ class BasePlugin:
         Domoticz.Log("onDeviceModified " + self.deviceStr(Unit))
 
         if Unit in Devices and Devices[Unit].Name != self.cachedDeviceNames[Unit]:
-            Domoticz.Log(
-                "Device name changed, new name: "
-                + Devices[Unit].Name
-                + ", old name: "
-                + self.cachedDeviceNames[Unit]
-            )
+            Domoticz.Log("Device name changed, new name: " +
+                         Devices[Unit].Name + ", old name: " + self.cachedDeviceNames[Unit])
             Device = Devices[Unit]
 
             try:
-                configdict = json.loads(Device.Options["config"])
-                if (
-                    "tasmota_tele_topic" in configdict and Device.SwitchType != 9
-                ):  # Do not set friendly name for button, they don't have their own friendly name
+                configdict = json.loads(Device.Options['config'])
+                # Do not set friendly name for button, they don't have their own friendly name
+                if "tasmota_tele_topic" in configdict and Device.SwitchType != 9:
                     # Tasmota device!
-                    device_nbr = ""
-                    m = re.match(r".*_(\d)$", str(Device.Options["devicename"]))
+                    device_nbr = ''
+                    m = re.match(
+                        r".*_(\d)$", str(Device.Options['devicename']))
                     if m:
                         device_nbr = m.group(1)
-                    cmnd_topic = re.sub(
-                        r"\/POWER\d?", "", configdict["command_topic"]
-                    )  # Remove '/POWER'
+                    # Remove '/POWER'
+                    cmnd_topic = re.sub(r"\/POWER\d?", "",
+                                        configdict['command_topic'])
                     self.mqttClient.Publish(
-                        cmnd_topic + "/FriendlyName" + str(device_nbr), Device.Name
-                    )
+                        cmnd_topic+'/FriendlyName'+str(device_nbr), Device.Name)
             except (ValueError, KeyError, TypeError) as e:
                 Domoticz.Debug("onDeviceModified: Error: " + str(e))
                 pass
@@ -703,50 +633,31 @@ class BasePlugin:
         if Unit in Devices and "devicename" in Devices[Unit].Options:
             Device = Devices[Unit]
             # Clear retained topic
-            devicetype = ""
-            if (
-                Device.Type == 0xF4
-                and Device.SubType == 0x49  # pTypeGeneralSwitch
-                and Device.SwitchType == 0  # sSwitchGeneralSwitch
-            ):  # OnOff
-                devicetype = "switch"
-            elif (
-                Device.Type == 0xF4
-                and Device.SubType == 0x49  # pTypeGeneralSwitch
-                and Device.SwitchType == 7  # sSwitchGeneralSwitch
-            ):  # Dimmer
-                devicetype = "light"
-            elif Device.Type == 0xF1:  # pTypeColorSwitch
-                devicetype = "light"
-            elif (
-                Device.Type == 0xF4
-                and Device.SubType == 0x49  # pTypeGeneralSwitch
-                and (  # sSwitchGeneralSwitch
-                    (Device.SwitchType == 3)
-                    or (Device.SwitchType == 15)  # Blind (up/down buttons)
-                    or (  # Venetian blinds EU (up/down/stop buttons)
-                        Device.SwitchType == 13
-                    )
-                )
-            ):  # Blinds Percentage
-                devicetype = "blinds"
-            elif (
-                Device.Type == 0xF4
-                and Device.SubType == 0x49  # pTypeGeneralSwitch
-                and Device.SwitchType == 9  # sSwitchGeneralSwitch
-            ):  # STYPE_PushOn
-                devicetype = "binary_sensor"
-            elif self.isMQTTSensor(Device):
-                devicetype = "sensor"
+            devicetype = ''
+            if (Device.Type == 0xf4 and     # pTypeGeneralSwitch
+                Device.SubType == 0x49 and  # sSwitchGeneralSwitch
+                    Device.SwitchType == 0):    # OnOff
+                devicetype = 'switch'
+            elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
+                  Device.SubType == 0x49 and  # sSwitchGeneralSwitch
+                  Device.SwitchType == 7):    # Dimmer
+                devicetype = 'light'
+            elif Device.Type == 0xf1:       # pTypeColorSwitch
+                devicetype = 'light'
+            elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
+                  Device.SubType == 0x49 and  # sSwitchGeneralSwitch
+                  ((Device.SwitchType == 3) or  # Blind (up/down buttons)
+                   # Venetian blinds EU (up/down/stop buttons)
+                   (Device.SwitchType == 15) or
+                      (Device.SwitchType == 13))):  # Blinds Percentage
+                devicetype = 'blinds'
+            elif (Device.Type == 0xf4 and   # pTypeGeneralSwitch
+                  Device.SubType == 0x49 and  # sSwitchGeneralSwitch
+                  Device.SwitchType == 9):    # STYPE_PushOn
+                devicetype = 'binary_sensor'
             if devicetype:
-                topic = (
-                    self.discoverytopic
-                    + "/"
-                    + devicetype
-                    + "/"
-                    + Devices[Unit].Options["devicename"]
-                    + "/config"
-                )
+                topic = self.discoverytopic + '/' + devicetype + '/' + \
+                    Devices[Unit].Options['devicename'] + '/config'
                 Domoticz.Log("Clearing topic '" + topic + "'")
                 self.mqttClient.Publish(topic, "", 1)
         self.copyDevices()
@@ -788,7 +699,8 @@ class BasePlugin:
                     except TypeError:
                         last_update = datetime.fromtimestamp(
                             time.mktime(
-                                time.strptime(device.LastUpdate, "%Y-%m-%d %H:%M:%S")
+                                time.strptime(device.LastUpdate,
+                                              "%Y-%m-%d %H:%M:%S")
                             )
                         )
 
@@ -815,13 +727,14 @@ class BasePlugin:
 
     # Pull configuration and status from tasmota device
     def refreshConfiguration(self, Topic):
-        Domoticz.Debug("refreshConfiguration for device with topic: '" + Topic + "'")
+        Domoticz.Debug(
+            "refreshConfiguration for device with topic: '" + Topic + "'")
         # Refresh relay / dimmer configuration
-        self.mqttClient.Publish(Topic + "/Status", "11")
+        self.mqttClient.Publish(Topic+"/Status", '11')
         # Refresh sensor configuration
         # self.mqttClient.Publish(Topic+"/Status",'10')
         # Refresh IP configuration
-        self.mqttClient.Publish(Topic + "/Status", "5")
+        self.mqttClient.Publish(Topic+"/Status", '5')
 
     # Returns list of topics to subscribe to
     def getTopics(self):
@@ -835,64 +748,33 @@ class BasePlugin:
                     # Domoticz.Debug("getTopics: key:'" + str(key) +"' value: '" + str(value) + "'")
                     try:
                         # if key.endswith('_topic'):
-                        if (
-                            key == "availability_topic"
-                            or key == "state_topic"
-                            or key == "brightness_state_topic"
-                            or key == "rgb_state_topic"
-                            or key == "color_temp_state_topic"
-                            or key == "position_topic"
-                        ):
+                        if key == 'availability_topic' or key == 'state_topic' or key == 'brightness_state_topic' or key == 'rgb_state_topic' or key == 'color_temp_state_topic' or key == 'position_topic':
                             topics.add(value)
                     except (TypeError) as e:
-                        Domoticz.Error("getTopics: Error: " + str(e))
+                        Domoticz.Error("getTopics: device " + Device.Name + " topic error: " + str(e))
                         pass
                 if "tasmota_tele_topic" in configdict:
                     # Subscribe to all Tasmota state topics
+                    # Replace tele with stat
                     state_topic = re.sub(
-                        r"^tele\/", "stat/", configdict["tasmota_tele_topic"]
-                    )  # Replace tele with stat
-                    state_topic = re.sub(
-                        r"\/tele\/", "/stat/", state_topic
-                    )  # Replace tele with stat
-                    state_topic = re.sub(
-                        r"\/STATE", "/#", state_topic
-                    )  # Replace '/STATE' with /#
+                        r"^tele\/", "stat/", configdict['tasmota_tele_topic'])
+                    # Replace tele with stat
+                    state_topic = re.sub(r"\/tele\/", "/stat/", state_topic)
+                    # Replace '/STATE' with /#
+                    state_topic = re.sub(r"\/STATE", "/#", state_topic)
                     topics.add(state_topic)
             except (ValueError, KeyError, TypeError) as e:
-                Domoticz.Error("getTopics: Error: " + str(e))
+                Domoticz.Error("getTopics: " + Device.Name + " error: " + str(e))
                 pass
-        topics.add(self.discoverytopic + "/#")
+
+        topics.add(self.discoverytopic+'/#')
         Domoticz.Debug("getTopics: '" + str(topics) + "'")
         return list(topics)
 
     # Returns list of matching devices
-    def getDevices(
-        self,
-        key="",
-        configkey="",
-        hasconfigkey="",
-        value="",
-        config="",
-        topic="",
-        type="",
-        channel="",
-    ):
-        Domoticz.Debug(
-            "getDevices key: '"
-            + key
-            + "' configkey: '"
-            + configkey
-            + "' hasconfigkey: '"
-            + hasconfigkey
-            + "' value: '"
-            + value
-            + "' config: '"
-            + config
-            + "' topic: '"
-            + topic
-            + "'"
-        )
+    def getDevices(self, key='', configkey='', hasconfigkey='', value='', config='', topic='', type='', channel=''):
+        Domoticz.Debug("getDevices key: '" + key + "' configkey: '" + configkey + "' hasconfigkey: '" +
+                       hasconfigkey + "' value: '" + value + "' config: '" + config + "' topic: '" + topic + "'")
         matchingDevices = set()
         if key != "":
             for k, Device in Devices.items():
@@ -933,47 +815,33 @@ class BasePlugin:
                             matchingDevices.add(Device)
                 except (ValueError, KeyError) as e:
                     pass
-        Domoticz.Debug("getDevices found " + str(len(matchingDevices)) + " devices")
+        Domoticz.Debug("getDevices found " +
+                       str(len(matchingDevices)) + " devices")
         return list(matchingDevices)
 
     def makeDevice(self, devicename, TypeName, switchTypeDomoticz, config):
-        iUnit = next(
-            filterfalse(set(Devices).__contains__, count(1))
-        )  # First unused 'Unit'
+        # First unused 'Unit'
+        iUnit = next(filterfalse(set(Devices).__contains__, count(1)))
 
         Domoticz.Log("Creating device with unit: " + str(iUnit))
 
-        Options = {"config": json.dumps(config), "devicename": devicename}
+        Options = {'config': json.dumps(config), 'devicename': devicename}
         # DeviceName = topic+' - '+type
-        DeviceName = config["name"]
-        Domoticz.Device(
-            Name=DeviceName,
-            Unit=iUnit,
-            TypeName=TypeName,
-            Switchtype=switchTypeDomoticz,
-            Options=Options,
-            Used=self.options["addDiscoveredDeviceUsed"],
-        ).Create()
+        DeviceName = config['name']
+        Domoticz.Device(Name=DeviceName, Unit=iUnit, TypeName=TypeName, Switchtype=switchTypeDomoticz,
+                        Options=Options, Used=self.options['addDiscoveredDeviceUsed']).Create()
 
     def makeDeviceRaw(self, devicename, Type, Subtype, switchTypeDomoticz, config):
-        iUnit = next(
-            filterfalse(set(Devices).__contains__, count(1))
-        )  # First unused 'Unit'
+        # First unused 'Unit'
+        iUnit = next(filterfalse(set(Devices).__contains__, count(1)))
 
         Domoticz.Log("Creating device with unit: " + str(iUnit))
 
-        Options = {"config": json.dumps(config), "devicename": devicename}
+        Options = {'config': json.dumps(config), 'devicename': devicename}
         # DeviceName = topic+' - '+type
-        DeviceName = config["name"]
-        Domoticz.Device(
-            Name=DeviceName,
-            Unit=iUnit,
-            Type=Type,
-            Subtype=Subtype,
-            Switchtype=switchTypeDomoticz,
-            Options=Options,
-            Used=self.options["addDiscoveredDeviceUsed"],
-        ).Create()
+        DeviceName = config['name']
+        Domoticz.Device(Name=DeviceName, Unit=iUnit, Type=Type, Subtype=Subtype, Switchtype=switchTypeDomoticz,
+                        Options=Options, Used=self.options['addDiscoveredDeviceUsed']).Create()
 
     def isDeviceIgnored(self, config):
         ignore = False
@@ -990,31 +858,15 @@ class BasePlugin:
         # TODO: Something smarter to detect Tasmota device
         try:
             # if "/cmnd/" in config["command_topic"] and "/POWER" in config["command_topic"] and "/tele/" in config["availability_topic"] and "/LWT" in config["availability_topic"]:
-            if (
-                (
-                    (
-                        "/stat/" in config["state_topic"]
-                        and "/RESULT" in config["state_topic"]
-                    )
-                    or (
-                        "/cmnd/" in config["state_topic"]
-                        and "/POWER" in config["state_topic"]
-                    )
-                    or (
-                        "/tele/" in config["state_topic"]
-                        and "/STATE" in config["state_topic"]
-                    )
-                )
-                and "/tele/" in config["availability_topic"]
-                and "/LWT" in config["availability_topic"]
-            ):
+            if (("/stat/" in config["state_topic"] and "/RESULT" in config["state_topic"]) or ("/cmnd/" in config["state_topic"] and "/POWER" in config["state_topic"])) and "/tele/" in config["availability_topic"] and "/LWT" in config["availability_topic"]:
                 isTasmota = True
 
             Domoticz.Debug("addTasmotaTopics: isTasmota: " + str(isTasmota))
             if isTasmota:
-                statetopic = config["availability_topic"].replace("/LWT", "/STATE")
-                Domoticz.Debug("addTasmotaTopics: statetopic: " + statetopic)
-                config["tasmota_tele_topic"] = statetopic
+                statetopic = config["availability_topic"].replace(
+                    "/LWT", "/STATE")
+                Domoticz.Debug("statetopic: " + statetopic)
+                config['tasmota_tele_topic'] = statetopic
         except (ValueError, KeyError) as e:
             pass
 
@@ -1191,7 +1043,8 @@ class BasePlugin:
 
     def updateSensor(self, device, topic, message):
         Domoticz.Debug(
-            "updateSensor topic: '" + topic + "' message: '" + str(message) + "'"
+            "updateSensor topic: '" + topic +
+            "' message: '" + str(message) + "'"
         )
 
         nValue = device.nValue  # 0
@@ -1213,11 +1066,12 @@ class BasePlugin:
             ):  # Switch status is present in Tasmota tele/STAT message
                 if "state_topic" in devicetopics:
                     Domoticz.Debug(
-                        "UpdateSensor: Got state_topic " + configdict["state_topic"]
+                        "updateSensor: Got state_topic " +
+                        configdict["state_topic"]
                     )
                 if "tasmota_tele_topic" in devicetopics:
                     Domoticz.Debug(
-                        "UpdateSensor: Got tasmota_tele_topic "
+                        "updateSensor: Got tasmota_tele_topic "
                         + configdict["tasmota_tele_topic"]
                     )
                 if "tasmota_tele_topic" in devicetopics:
@@ -1244,7 +1098,8 @@ class BasePlugin:
                     )
 
                     if m != None:
-                        value_template = m.group(1).strip().strip("'").strip('"')
+                        value_template = m.group(
+                            1).strip().strip("'").strip('"')
                         m = re.split(r"\[(.*?)\]", value_template)
 
                         # Domoticz.Debug("updateSensor: value_template '" + value_template + "'")
@@ -1256,7 +1111,7 @@ class BasePlugin:
                                     m[len(m) - 2].strip().strip("'").strip('"')
                                 )
                                 # Domoticz.Debug("updateSensor: value_template '" + value_template + "'")
-                                m = m[1 : len(m) - 2]
+                                m = m[1: len(m) - 2]
                                 # Domoticz.Debug("updateSensor: M2:" + str( m ) )
                                 for value in m:
                                     val = value.strip().strip("'").strip('"')
@@ -1273,15 +1128,18 @@ class BasePlugin:
                     )
 
                     temp = None
+                    hum = None
+
                     try:
                         temp = float(msg[value_template])
                     except (ValueError, KeyError, TypeError):
                         pass
 
-                    hum = None
-                    if value_template != "Humidity":
+                    if value_template == "Humidity":
+                        # Humidity template always requires temperature
                         try:
                             hum = float(msg["Humidity"])
+                            temp = float(msg["Temperature"])
                         except (ValueError, KeyError, TypeError):
                             pass
 
@@ -1334,7 +1192,7 @@ class BasePlugin:
                     + self.deviceStr(self.getUnit(device))
                     + ": Topic: '"
                     + str(topic)
-                    + " 'Setting nValue: "
+                    + "' Setting nValue: "
                     + str(device.nValue)
                     + "->"
                     + str(nValue)
@@ -1372,148 +1230,82 @@ class BasePlugin:
 
         try:
             devicetopics = []
-            configdict = json.loads(device.Options["config"])
+            configdict = json.loads(device.Options['config'])
             for key, value in configdict.items():
                 if value == topic:
                     devicetopics.append(key)
-            if (
-                "state_topic" in devicetopics or "tasmota_tele_topic" in devicetopics
-            ):  # Switch status is present in Tasmota tele/STAT message
-                if "state_topic" in devicetopics:
-                    Domoticz.Debug("Got state_topic")
-                if "tasmota_tele_topic" in devicetopics:
-                    Domoticz.Debug("Got tasmota_tele_topic")
-                if "tasmota_tele_topic" in devicetopics:
-                    isTeleTopic = (
-                        True  # Suppress device triggers for periodic tele/STAT message
-                    )
+            if ("state_topic" in devicetopics
+                    or "tasmota_tele_topic" in devicetopics):  # Switch status is present in Tasmota tele/STAT message
+                if ("state_topic" in devicetopics):
+                    Domoticz.Debug("updateSwitch: Got state_topic")
+                if ("tasmota_tele_topic" in devicetopics):
+                    Domoticz.Debug("updateSwitch: Got tasmota_tele_topic")
+                if ("tasmota_tele_topic" in devicetopics):
+                    isTeleTopic = True  # Suppress device triggers for periodic tele/STAT message
                 if "value_template" in configdict:
-                    m = re.match(
-                        r"^{{value_json\.(.+)}}$", configdict["value_template"]
-                    )
-                    if m:
-                        value_template = m.group(1)
+                    m = re.match(r"^{{value_json\.(.+)}}$",
+                                 configdict['value_template'])
+                    value_template = m.group(1)
+                    Domoticz.Debug("value_template: '" + value_template + "'")
+                    if value_template in message:
                         Domoticz.Debug(
-                            "updateSwitch: value_template: '" + value_template + "'"
-                        )
-                        if value_template in message:
-                            Domoticz.Debug(
-                                "updateSwitch: message[value_template]: '"
-                                + message[value_template]
-                                + "'"
-                            )
-                            payload = message[value_template]
-                            if (
-                                "payload_off" in configdict
-                                and payload == configdict["payload_off"]
-                            ):
-                                updatedevice = True
-                                nValue = 0
-                            if (
-                                "payload_on" in configdict
-                                and payload == configdict["payload_on"]
-                            ):
-                                updatedevice = True
-                                nValue = 1
-                        else:
-                            Domoticz.Debug("updateSwitch: message[value_template]: '-'")
+                            "message[value_template]: '" + message[value_template] + "'")
+                        payload = message[value_template]
+                        if "payload_off" in configdict and payload == configdict["payload_off"]:
+                            updatedevice = True
+                            nValue = 0
+                        if "payload_on" in configdict and payload == configdict["payload_on"]:
+                            updatedevice = True
+                            nValue = 1
                     else:
-                        Domoticz.Debug(
-                            "updateSwitch: unsupported value_template: '"
-                            + configdict["value_template"]
-                            + "'"
-                        )
+                        Domoticz.Debug("updateSwitch: message[value_template]: '-'")
                 else:
                     Domoticz.Debug("updateSwitch: No value_template")
                     payload = message
-                    if (
-                        (
-                            "payload_off" in configdict
-                            and payload == configdict["payload_off"]
-                        )
-                        or (
-                            "state_open" in configdict
-                            and payload == configdict["state_open"]
-                        )
-                        or "payload_off" not in configdict
-                        and "state_open" not in configdict
-                        and payload == "OFF"
-                    ):
+                    if (("payload_off" in configdict and payload == configdict["payload_off"]) or
+                        ("state_open" in configdict and payload == configdict["state_open"]) or
+                            "payload_off" not in configdict and "state_open" not in configdict and payload == 'OFF'):
                         updatedevice = True
                         nValue = 0
-                    if (
-                        (
-                            "payload_on" in configdict
-                            and payload == configdict["payload_on"]
-                        )
-                        or (
-                            "state_close" in configdict
-                            and payload == configdict["state_close"]
-                        )
-                        or "payload_on" not in configdict
-                        and "state_close" not in configdict
-                        and payload == "ON"
-                    ):
+                    if (("payload_on" in configdict and payload == configdict["payload_on"]) or
+                        ("state_close" in configdict and payload == configdict["state_close"]) or
+                            "payload_on" not in configdict and "state_close" not in configdict and payload == 'ON'):
                         updatedevice = True
                         nValue = 1
-                    if (
-                        (
-                            "payload_stop" in configdict
-                            and payload == configdict["payload_stop"]
-                        )
-                        or (
-                            "state_stop" in configdict
-                            and payload == configdict["state_stop"]
-                        )
-                        or "payload_stop" not in configdict
-                        and "state_stop" not in configdict
-                        and payload == "STOP"
-                    ):
+                    if (("payload_stop" in configdict and payload == configdict["payload_stop"]) or
+                        ("state_stop" in configdict and payload == configdict["state_stop"]) or
+                            "payload_stop" not in configdict and "state_stop" not in configdict and payload == 'STOP'):
                         updatedevice = True
                         nValue = 17  # state = STOP  in blinds
-                    Domoticz.Debug("updateSwitch: nValue: '" + str(nValue) + "'")
+                    Domoticz.Debug("updateSwitch: nValue: '" +
+                                   str(nValue) + "'")
             if "brightness_state_topic" in devicetopics:
                 Domoticz.Debug("updateSwitch: Got brightness_state_topic")
                 if "brightness_value_template" in configdict:
-                    m = re.match(
-                        r"^{{value_json\.(.+)}}$",
-                        configdict["brightness_value_template"],
-                    )
-                    if m:
-                        brightness_value_template = m.group(1)
+                    m = re.match(r"^{{value_json\.(.+)}}$",
+                                 configdict['brightness_value_template'])
+                    brightness_value_template = m.group(1)
+                    Domoticz.Debug("brightness_value_template: '" +
+                                   brightness_value_template + "'")
+                    if brightness_value_template in message:
                         Domoticz.Debug(
-                            "updateSwitch: brightness_value_template: '"
-                            + brightness_value_template
-                            + "'"
-                        )
-                        if brightness_value_template in message:
-                            Domoticz.Debug(
-                                "updateSwitch: message[brightness_value_template]: '"
-                                + str(message[brightness_value_template])
-                                + "'"
-                            )
-                            payload = message[brightness_value_template]
-                            brightness_scale = 255
-                            if "brightness_scale" in configdict:
-                                brightness_scale = configdict["brightness_scale"]
-                            sValue = payload * 100 / brightness_scale
-                        else:
-                            Domoticz.Debug(
-                                "updateSwitch: message[brightness_value_template]: '-'"
-                            )
+                            "updateSwitch: message[brightness_value_template]: '" + str(message[brightness_value_template]) + "'")
+                        payload = message[brightness_value_template]
+                        brightness_scale = 255
+                        if "brightness_scale" in configdict:
+                            brightness_scale = configdict['brightness_scale']
+                        sValue = payload * 100 / brightness_scale
                     else:
                         Domoticz.Debug(
-                            "updateSwitch: unsupported template: '"
-                            + configdict["brightness_value_template"]
-                            + "'"
-                        )
+                            "updateSwitch: message[brightness_value_template]: '-'")
                 else:
                     payload = int(message)
                     brightness_scale = 255
                     if "brightness_scale" in configdict:
                         brightness_scale = configdict["brightness_scale"]
                     sValue = int(payload * 100 / brightness_scale)
-                    Domoticz.Debug("updateSwitch: sValue: '" + str(sValue) + "'")
+                    Domoticz.Debug("updateSwitch: sValue: '" +
+                                   str(sValue) + "'")
                     updatedevice = True
 
             if "position_topic" in devicetopics:
@@ -1526,50 +1318,28 @@ class BasePlugin:
             if "rgb_state_topic" in devicetopics:
                 Domoticz.Debug("updateSwitch: Got rgb_state_topic")
                 if "rgb_value_template" in configdict:
-                    m = re.match(
-                        r"^{{value_json\.(.+)}}$", configdict["rgb_value_template"]
-                    )
-                    if m:
-                        rgb_value_template = m.group(1)
+                    m = re.match(r"^{{value_json\.(.+)}}$",
+                                 configdict['rgb_value_template'])
+                    rgb_value_template = m.group(1)
+                    Domoticz.Debug("rgb_value_template: '" +
+                                   rgb_value_template + "'")
+                    if rgb_value_template in message:
                         Domoticz.Debug(
-                            "updateSwitch: rgb_value_template: '"
-                            + rgb_value_template
-                            + "'"
-                        )
-                        if rgb_value_template in message:
-                            Domoticz.Debug(
-                                "updateSwitch: message[rgb_value_template]: '"
-                                + str(message[rgb_value_template])
-                                + "'"
-                            )
-                            payload = message[rgb_value_template]
-                            if (
-                                len(payload) == 6
-                                or len(payload) == 8
-                                or len(payload) == 10
-                            ):
-                                updatecolor = True
-                                # TODO check contents of cw/ww and set mode accordingly
-                                Color["m"] = 3  # RGB
-                                Color["t"] = 0
-                                Color["r"] = int(payload[0:2], 16)
-                                Color["g"] = int(payload[2:4], 16)
-                                Color["b"] = int(payload[4:6], 16)
-                                Color["cw"] = 0
-                                Color["ww"] = 0
-                                Domoticz.Debug(
-                                    "updateSwitch: Color: " + json.dumps(Color)
-                                )
-                        else:
-                            Domoticz.Debug(
-                                "updateSwitch: message[rgb_value_template]: '-'"
-                            )
+                            "message[rgb_value_template]: '" + str(message[rgb_value_template]) + "'")
+                        payload = message[rgb_value_template]
+                        if len(payload) == 6 or len(payload) == 8 or len(payload) == 10:
+                            updatecolor = True
+                            # TODO check contents of cw/ww and set mode accordingly
+                            Color["m"] = 3  # RGB
+                            Color["t"] = 0
+                            Color["r"] = int(payload[0:2], 16)
+                            Color["g"] = int(payload[2:4], 16)
+                            Color["b"] = int(payload[4:6], 16)
+                            Color["cw"] = 0
+                            Color["ww"] = 0
+                            Domoticz.Debug("Color: "+json.dumps(Color))
                     else:
-                        Domoticz.Debug(
-                            "updateSwitch: unsupported template: '"
-                            + configdict["rgb_value_template"]
-                            + "'"
-                        )
+                        Domoticz.Debug("message[rgb_value_template]: '-'")
                 else:
                     # TODO: test
                     # payload = message
@@ -1577,42 +1347,27 @@ class BasePlugin:
                     # if "brightness_scale" in configdict:
                     #    brightness_scale = configdict['brightness_scale']
                     # sValue = payload * 100 / brightness_scale
-                    Domoticz.Debug("updateSwitch: sValue: '" + str(sValue) + "'")
+                    Domoticz.Debug("updateSwitch: sValue: '" +
+                                   str(sValue) + "'")
             elif "color_temp_state_topic" in devicetopics:
                 Domoticz.Debug("updateSwitch: Got color_temp_state_topic")
                 if "color_temp_value_template" in configdict:
-                    m = re.match(
-                        r"^{{value_json\.(.+)}}$",
-                        configdict["color_temp_value_template"],
-                    )
-                    if m:
-                        color_temp_value_template = m.group(1)
+                    m = re.match(r"^{{value_json\.(.+)}}$",
+                                 configdict['color_temp_value_template'])
+                    color_temp_value_template = m.group(1)
+                    Domoticz.Debug("color_temp_value_template: '" +
+                                   color_temp_value_template + "'")
+                    if color_temp_value_template in message:
                         Domoticz.Debug(
-                            "updateSwitch: color_temp_value_template: '"
-                            + color_temp_value_template
-                            + "'"
-                        )
-                        if color_temp_value_template in message:
-                            Domoticz.Debug(
-                                "updateSwitch: message[color_temp_value_template]: '"
-                                + str(message[color_temp_value_template])
-                                + "'"
-                            )
-                            payload = message[color_temp_value_template]
-                            updatecolor = True
-                            Color["m"] = 2  # Color temperature
-                            Color["t"] = int(255 * (int(payload) - 153) / (500 - 153))
-                            Domoticz.Debug("updateSwitch: Color: " + json.dumps(Color))
-                        else:
-                            Domoticz.Debug(
-                                "updateSwitch: message[color_temp_value_template]: '-'"
-                            )
+                            "message[color_temp_value_template]: '" + str(message[color_temp_value_template]) + "'")
+                        payload = message[color_temp_value_template]
+                        updatecolor = True
+                        Color["m"] = 2  # Color temperature
+                        Color["t"] = int(255*(int(payload)-153)/(500-153))
+                        Domoticz.Debug("Color: "+json.dumps(Color))
                     else:
                         Domoticz.Debug(
-                            "updateSwitch: unsupported template: '"
-                            + configdict["color_temp_value_template"]
-                            + "'"
-                        )
+                            "message[color_temp_value_template]: '-'")
                 else:
                     # TODO: test
                     # payload = message
@@ -1620,61 +1375,24 @@ class BasePlugin:
                     # if "brightness_scale" in configdict:
                     #    brightness_scale = configdict['brightness_scale']
                     # sValue = payload * 100 / brightness_scale
-                    Domoticz.Debug("updateSwitch: sValue: '" + str(sValue) + "'")
-        except (ValueError, KeyError) as e:
+                    Domoticz.Debug("sValue: '" + str(sValue) + "'")
+        except (ValueError, KeyError, AttributeError) as e:
             pass
 
         if updatedevice:
             if updatecolor:
                 # Do not update if we got Tasmota periodic state update and state has not changed
-                if (
-                    not isTeleTopic
-                    or nValue != device.nValue
-                    or sValue != device.sValue
-                ):
-                    Domoticz.Log(
-                        self.deviceStr(self.getUnit(device))
-                        + ": Topic: '"
-                        + str(topic)
-                        + " 'Setting nValue: "
-                        + str(device.nValue)
-                        + "->"
-                        + str(nValue)
-                        + ", sValue: '"
-                        + str(device.sValue)
-                        + "'->'"
-                        + str(sValue)
-                        + "', color: '"
-                        + device.Color
-                        + "'->'"
-                        + json.dumps(Color)
-                        + "'"
-                    )
-                    device.Update(
-                        nValue=nValue, sValue=str(sValue), Color=json.dumps(Color)
-                    )
+                if not isTeleTopic or nValue != device.nValue or sValue != device.sValue:
+                    Domoticz.Log(self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(device.nValue) + "->" + str(
+                        nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "', color: '" + device.Color + "'->'" + json.dumps(Color) + "'")
+                    device.Update(nValue=nValue, sValue=str(
+                        sValue), Color=json.dumps(Color))
                     self.copyDevices()
             else:
                 # Do not update if we got Tasmota periodic state update and state has not changed
-                if (
-                    not isTeleTopic
-                    or nValue != device.nValue
-                    or sValue != device.sValue
-                ):
-                    Domoticz.Log(
-                        self.deviceStr(self.getUnit(device))
-                        + ": Topic: '"
-                        + str(topic)
-                        + " 'Setting nValue: "
-                        + str(device.nValue)
-                        + "->"
-                        + str(nValue)
-                        + ", sValue: '"
-                        + str(device.sValue)
-                        + "'->'"
-                        + str(sValue)
-                        + "'"
-                    )
+                if not isTeleTopic or nValue != device.nValue or sValue != device.sValue:
+                    Domoticz.Log(self.deviceStr(self.getUnit(device)) + ": Topic: '" + str(topic) + " 'Setting nValue: " + str(
+                        device.nValue) + "->" + str(nValue) + ", sValue: '" + str(device.sValue) + "'->'" + str(sValue) + "'")
                     device.Update(nValue=nValue, sValue=str(sValue))
                     self.copyDevices()
 
@@ -1684,28 +1402,21 @@ class BasePlugin:
 
         try:
             devicetopics = []
-            configdict = json.loads(device.Options["config"])
+            configdict = json.loads(device.Options['config'])
             for key, value in configdict.items():
                 if value == topic:
                     devicetopics.append(key)
             if "availability_topic" in devicetopics:
                 Domoticz.Debug("updateAvailability: Got availability_topic")
                 if "availability_template" in configdict:
-                    m = re.match(
-                        r"^{{value_json\.(.+)}}$", configdict["availability_template"]
-                    )
+                    m = re.match(r"^{{value_json\.(.+)}}$",
+                                 configdict['availability_template'])
                     availability_template = m.group(1)
-                    Domoticz.Debug(
-                        "updateAvailability: availability_template: '"
-                        + availability_template
-                        + "'"
-                    )
+                    Domoticz.Debug("availability_template: '" +
+                                   availability_template + "'")
                     if availability_template in message:
                         Domoticz.Debug(
-                            "updateAvailability: message[availability_template]: '"
-                            + message[availability_template]
-                            + "'"
-                        )
+                            "message[availability_template]: '" + message[availability_template] + "'")
                         payload = message[availability_template]
                         if payload == configdict["payload_available"]:
                             updatedevice = True
@@ -1714,7 +1425,8 @@ class BasePlugin:
                             updatedevice = True
                             TimedOut = 1
                         Domoticz.Debug(
-                            "updateAvailability: TimedOut: '" + str(TimedOut) + "'"
+                            "updateAvailability: TimedOut: '" +
+                            str(TimedOut) + "'"
                         )
                     else:
                         Domoticz.Debug(
@@ -1728,24 +1440,17 @@ class BasePlugin:
                     if payload == configdict["payload_not_available"]:
                         updatedevice = True
                         TimedOut = 1
-                    Domoticz.Debug(
-                        "updateAvailability: TimedOut: '" + str(TimedOut) + "'"
-                    )
+                    Domoticz.Debug("TimedOut: '" + str(TimedOut) + "'")
         except (ValueError, KeyError) as e:
             pass
 
         if updatedevice:
             nValue = device.nValue
             sValue = device.sValue
-            Domoticz.Log(
-                self.deviceStr(self.getUnit(device))
-                + ": Setting TimedOut: '"
-                + str(TimedOut)
-                + "'"
-            )
-            device.Update(
-                nValue=nValue, sValue=sValue, TimedOut=TimedOut, SuppressTriggers=True
-            )
+            Domoticz.Log(self.deviceStr(self.getUnit(device)) +
+                         ": Setting TimedOut: '" + str(TimedOut) + "'")
+            device.Update(nValue=nValue, sValue=sValue,
+                          TimedOut=TimedOut, SuppressTriggers=True)
             self.copyDevices()
 
     def updateTasmotaStatus(self, device, topic, message):
@@ -1758,20 +1463,16 @@ class BasePlugin:
 
         try:
             devicetopics = []
-            configdict = json.loads(device.Options["config"])
+            configdict = json.loads(device.Options['config'])
             for key, value in configdict.items():
                 if value == topic:
                     devicetopics.append(key)
             if "tasmota_tele_topic" in devicetopics:
-                Domoticz.Debug("updateAvailability: Got tasmota_tele_topic")
-                if "Vcc" in message and self.options["updateVCC"]:
-                    Vcc = int(message["Vcc"] * 10)
-                    Domoticz.Debug(
-                        "updateAvailability: Set battery level to: "
-                        + str(Vcc)
-                        + " was:"
-                        + str(device.BatteryLevel)
-                    )
+                Domoticz.Debug("Got tasmota_tele_topic")
+                if "Vcc" in message and self.options['updateVCC']:
+                    Vcc = int(message["Vcc"]*10)
+                    Domoticz.Debug("Set battery level to: " +
+                                   str(Vcc) + " was:" + str(device.BatteryLevel))
                     updatedevice = True
                 if (
                     "Wifi" in message
@@ -1779,45 +1480,21 @@ class BasePlugin:
                     and self.options["updateRSSI"]
                 ):
                     RSSI = int(message["Wifi"]["RSSI"])
-                    Domoticz.Debug(
-                        "updateAvailability: Set SignalLevel to: "
-                        + str(RSSI)
-                        + " was:"
-                        + str(device.SignalLevel)
-                    )
+                    Domoticz.Debug("Set SignalLevel to: " +
+                                   str(RSSI) + " was:" + str(device.SignalLevel))
                     updatedevice = True
-            if updatedevice and (
-                device.SignalLevel != RSSI or device.BatteryLevel != Vcc
-            ):
-                Domoticz.Log(
-                    self.deviceStr(self.getUnit(device))
-                    + ": Setting SignalLevel: '"
-                    + str(RSSI)
-                    + "', BatteryLevel: '"
-                    + str(Vcc)
-                    + "'"
-                )
-                device.Update(
-                    nValue=nValue,
-                    sValue=sValue,
-                    SignalLevel=RSSI,
-                    BatteryLevel=Vcc,
-                    SuppressTriggers=True,
-                )
+            if updatedevice and (device.SignalLevel != RSSI or device.BatteryLevel != Vcc):
+                Domoticz.Log(self.deviceStr(self.getUnit(
+                    device)) + ": Setting SignalLevel: '" + str(RSSI) + "', BatteryLevel: '" + str(Vcc) + "'")
+                device.Update(nValue=nValue, sValue=sValue, SignalLevel=RSSI,
+                              BatteryLevel=Vcc, SuppressTriggers=True)
                 self.copyDevices()
         except (ValueError, KeyError) as e:
             pass
 
     def updateTasmotaSettings(self, device, topic, message):
-        Domoticz.Debug(
-            "updateTasmotaSettings "
-            + self.deviceStr(self.getUnit(device))
-            + " topic: '"
-            + topic
-            + "' message: '"
-            + str(message)
-            + "'"
-        )
+        Domoticz.Debug("updateTasmotaSettings " + self.deviceStr(self.getUnit(device)
+                                                                 ) + " topic: '" + topic + "' message: '" + str(message) + "'")
         nValue = device.nValue
         sValue = device.sValue
         updatedevice = False
@@ -1826,35 +1503,24 @@ class BasePlugin:
 
         try:
             devicetopics = []
-            configdict = json.loads(device.Options["config"])
-            if topic.endswith("STATUS5"):
+            configdict = json.loads(device.Options['config'])
+            if topic.endswith('STATUS5'):
                 if "StatusNET" in message and "IPAddress" in message["StatusNET"]:
                     IPAddress = message["StatusNET"]["IPAddress"]
-                    cmnd_topic = re.sub(
-                        r"^tele\/", "cmnd/", configdict["tasmota_tele_topic"]
-                    )  # Replace tele with cmnd
-                    cmnd_topic = re.sub(
-                        r"\/tele\/", "/cmnd/", cmnd_topic
-                    )  # Replace tele with cmnd
-                    cmnd_topic = re.sub(
-                        r"\/STATE\d?", "", cmnd_topic
-                    )  # Remove '/STATE'
+                    # Replace tele with cmnd
+                    cmnd_topic = re.sub(r"^tele\/", "cmnd/",
+                                        configdict['tasmota_tele_topic'])
+                    # Replace tele with cmnd
+                    cmnd_topic = re.sub(r"\/tele\/", "/cmnd/", cmnd_topic)
+                    cmnd_topic = re.sub(r"\/STATE\d?", "",
+                                        cmnd_topic)  # Remove '/STATE'
                     Description = "IP: " + IPAddress + ", Topic: " + cmnd_topic
                     updatedevice = True
             if updatedevice and (device.Description != Description):
-                Domoticz.Log(
-                    "updateTasmotaSettings updating description from: '"
-                    + device.Description
-                    + "' to: '"
-                    + Description
-                    + "'"
-                )
-                device.Update(
-                    nValue=nValue,
-                    sValue=sValue,
-                    Description=Description,
-                    SuppressTriggers=True,
-                )
+                Domoticz.Log("updateTasmotaSettings updating description from: '" +
+                             device.Description + "' to: '" + Description + "'")
+                device.Update(nValue=nValue, sValue=sValue,
+                              Description=Description, SuppressTriggers=True)
                 self.copyDevices()
         except (ValueError, KeyError) as e:
             pass
@@ -1922,7 +1588,7 @@ def DumpConfigToLog():
     return
 
 
-def DumpMQTTMessageToLog(topic, rawmessage, prefix=""):
-    message = rawmessage.decode("utf8", "replace")
-    message = str(message.encode("unicode_escape"))
-    Domoticz.Log(prefix + topic + ":" + message)
+def DumpMQTTMessageToLog(topic, rawmessage, prefix=''):
+    message = rawmessage.decode('utf8', 'replace')
+    message = str(message.encode('unicode_escape'))
+    Domoticz.Log(prefix+topic+":"+message)
